@@ -1,0 +1,32 @@
+name: 川西自驾 15分钟高频天气与路况微信监控
+
+on:
+  schedule:
+    # 国际标准时间每 15 分钟触发一次
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  traffic_monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v3
+
+      - name: 配置 Python 环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 安装 Python 依赖
+        run: |
+          pip install requests
+
+      - name: 执行高频轮询与微信差分推送
+        env:
+          WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
+          WECHAT_APP_SECRET: ${{ secrets.WECHAT_APP_SECRET }}
+          WECHAT_USER_OPENID: ${{ secrets.WECHAT_USER_OPENID }}
+          WECHAT_TEMPLATE_ID: ${{ secrets.WECHAT_TEMPLATE_ID }}
+        run: |
+          python g318_monitor.py
