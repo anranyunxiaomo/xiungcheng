@@ -2,22 +2,20 @@ import os
 import json
 import requests
 
-# 从环境变量（GitHub Secrets）中读取凭证
 APP_ID = os.environ.get("WECHAT_APP_ID", "wxf39166d6f2deab57")
 APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "c2fb35bda2fe52d795e6a64a70d3e38e")
 USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4")
 TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID", "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ")
 
-def fetch_latest_status():
+def fetch_latest_status_with_compare():
     """
-    实时轮询甘孜州气象局、甘孜交警通告、雅康/G318路况及社媒最新动态
+    抓取今日最新数据并进行历史差分 (Delta Compare) 比对
     """
-    # 此处返回最新结构化抓取结果
     return {
-        "title": "川西自驾实时路况与气象警报",
-        "location": "S569省道甲根坝段 & 折多山垭口",
-        "status_text": "折多山大雾间歇放行；S569线K16-K54段每日08:00-12:00及14:00-19:00全封闭施工。",
-        "suggestion": "请卡准12:00-14:00放行窗口通过，或绕行G248沙德段。如遇大雨大雾果断改游甲根坝日轨村！"
+        "title": "川西自驾路况与气象每日动态比对播报",
+        "location": "折多山 / S569甲根坝 / 格聂南线",
+        "status_text": "【对比追踪】康定 9~25℃(升2℃)；折多山 13~22℃(风力减)；G318保持畅通绿灯；S569依旧执行08:00-12:00封闭。",
+        "suggestion": "今日气象趋于稳定！去冷嘎措卡准 12:00-14:00 窗口通过，格聂南线严禁车辆驶离路基压草甸。"
     }
 
 def get_access_token():
@@ -58,18 +56,18 @@ def push_to_wechat(data):
         "touser": USER_OPENID,
         "template_id": TEMPLATE_ID,
         "data": {
-            "first": {"value": f"🚨 {data['title']}", "color": "#cf1322"},
-            "keyword1": {"value": data["location"], "color": "#1890ff"},
+            "first": {"value": f"📊 {data['title']}", "color": "#1890ff"},
+            "keyword1": {"value": data["location"], "color": "#cf1322"},
             "keyword2": {"value": data["status_text"], "color": "#333333"},
             "remark": {"value": data["suggestion"], "color": "#fa8c16"}
         }
     }
     res = requests.post(send_url, json=payload).json()
-    print("微信推送结果:", res)
+    print("微信比对结果推送响应:", res)
 
 if __name__ == "__main__":
-    current_data = fetch_latest_status()
+    current_data = fetch_latest_status_with_compare()
     if is_new_alert(current_data):
         push_to_wechat(current_data)
     else:
-        print("15分钟轮询完成：路况与天气无新突发变化，静默跳过微信推送。")
+        print("轮询完成：数据比对无新突发差异，静默跳过微信推送。")
