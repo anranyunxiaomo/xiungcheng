@@ -18,10 +18,10 @@ def send_real_test():
         "touser": USER_OPENID,
         "template_id": TEMPLATE_ID,
         "data": {
-            "first": {"value": "🏔️ 川西 8.1-8.9 路线实时路况与天气播报", "color": "#1890ff"},
-            "keyword1": {"value": "S569省道甲根坝段 & 折多山垭口", "color": "#cf1322"},
-            "keyword2": {"value": "折多山垭口目前多云伴有大雾；S569线K16-K54段施工，08:00-12:00及14:00-19:00全封闭管制！", "color": "#333333"},
-            "remark": {"value": "💡 贴心指南：8月7日去冷嘎措请卡准 12:00-14:00 窗口通过，或绕行 G248 沙德段。8月3日巴塘请务必加满油！", "color": "#fa8c16"}
+            "first": {"value": "🏔️ 川西 8.1-8.9 路线 7.24 实时路况与天气播报", "color": "#1890ff"},
+            "keyword1": {"value": "折多山 / S569甲根坝 / G318川藏线", "color": "#cf1322"},
+            "keyword2": {"value": "【7.24最新】G318全线双向畅通；折多山阴天局部有雾；S569线K16-K54段维持08:00-12:00全封闭施工。", "color": "#333333"},
+            "remark": {"value": "💡 应急提示：理塘转晴偏冷；去冷嘎措请卡准 12:00-14:00 窗口通行或绕行 G248 沙德段。祝行程平安！", "color": "#fa8c16"}
         }
     }
     res = requests.post(send_url, json=payload).json()
