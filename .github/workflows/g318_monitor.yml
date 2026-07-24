@@ -1,9 +1,9 @@
-name: 川西自驾 15分钟高频天气与路况微信监控
+name: 川西自驾 30分钟云端高精度天气与突发路况微信实时监控
 
 on:
   schedule:
-    # 国际标准时间每 15 分钟触发一次
-    - cron: '*/15 * * * *'
+    # 国际标准时间每 30 分钟自动巡查检索一次 (Cron: */30 * * * *)
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         run: |
           pip install requests
 
-      - name: 执行高频轮询与微信差分推送
+      - name: 执行 30分钟云端高精度巡查与突发路况实时推送
         env:
           WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
           WECHAT_APP_SECRET: ${{ secrets.WECHAT_APP_SECRET }}
