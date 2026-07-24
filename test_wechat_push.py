@@ -1,65 +1,93 @@
 import os
 import json
-import time
+import subprocess
 import requests
 
 APP_ID = "wxf39166d6f2deab57"
 APP_SECRET = "c2fb35bda2fe52d795e6a64a70d3e38e"
 USER_OPENID = "of84Y3bGGlhFtf7vqa52snEve8w4"
 
+cwd = "/Users/anranyunxiaomo/Desktop/project/xiungcheng"
+html_path = os.path.join(cwd, "daily_poster_demo.html")
+img_path = os.path.join(cwd, "daily_poster_demo.png")
+
 def get_access_token():
     token_url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={APP_ID}&secret={APP_SECRET}"
     r = requests.get(token_url).json()
     return r.get("access_token")
 
-def send_msg(token, content):
+def upload_image_to_wechat(token, file_path):
+    upload_url = f"https://api.weixin.qq.com/cgi-bin/media/upload?access_token={token}&type=image"
+    with open(file_path, "rb") as f:
+        files = {"media": f}
+        res = requests.post(upload_url, files=files).json()
+    print("微信素材上传结果:", res)
+    return res.get("media_id")
+
+def send_image_msg(token, media_id):
     custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
     payload = {
         "touser": USER_OPENID,
-        "msgtype": "text",
-        "text": {
-            "content": content
+        "msgtype": "image",
+        "image": {
+            "media_id": media_id
         }
     }
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("推送结果:", res)
+    print("微信海报图片消息推送结果:", res)
     return res
 
-def send_romantic_demo():
+def send_elegant_text_msg(token, text_content):
+    custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
+    payload = {
+        "touser": USER_OPENID,
+        "msgtype": "text",
+        "text": {
+            "content": text_content
+        }
+    }
+    json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    res = requests.post(custom_url, data=json_data, headers=headers).json()
+    print("微信优雅文本推送结果:", res)
+    return res
+
+def run():
     token = get_access_token()
     if not token:
         print("获取 token 失败")
         return
 
-    # 专门为女生定制的【提前一天专属暖心路书卡片】范例 (7.31 晚推送 8.1 示例)
-    msg_demo = """🌸 【8.1 明日川西自驾预告·给她的专属路书】
-━━━━━━━━━━━━━━━━━━━━
-✨ 8月1日 (DAY 1) 成都 ➔ 康定
+    # 1. 生成并推送美感炸裂的时尚卡片海报图片
+    media_id = upload_image_to_wechat(token, img_path)
+    if media_id:
+        send_image_msg(token, media_id)
+
+    # 2. 搭配一条去掉了难看下划线、字重舒展的小红书流优雅纯文本
+    elegant_text = """🌸 8.1 明日川西自驾预告 · 成都 ➔ 康定
+
 📍 目的地海拔：2560m (低海拔舒适适应)
+📅 路线节点：DAY 1
 
-🌤️ 【天气与气温】
-• 成都市区：22 ~ 31℃ (晴间多云)
-• 康定市区：14 ~ 22℃ (多云伴微风，体感舒适)
-🌧️ 降雨时段：预计集中在夜间 19:00 以后
+🌤️ 节点气温与天气
+· 康定市区：14℃ ~ 22℃ (多云体感宜人)
+· 成都市区：22℃ ~ 31℃ (多云)
+· 降雨预测：预计集中在 19:00 夜间
 
-👗 【穿搭与打卡建议】
-• 穿搭建议：透气长袖内搭 + 随身防风外套
-• 拍照打卡：傍晚 18:00 康定情歌广场与折多河畔
+👗 穿搭灵感与打卡建议
+· 建议穿搭：透气长袖内搭 + 随身防风外套
+· 拍照打卡：傍晚 18:00 康定情歌广场与折多河畔
 
-⛽ 【路线与加油】
-• G4218 雅康高速全线畅通，隧道出口注意减速；
-• 会在天全服务区或康定市区将油箱彻底加满。
+💡 暖心守护与注意事项
+· 第一晚宿低海拔康定极利于适应高反，今晚切勿剧烈运动或洗长热水澡防感冒。
+· 雅康高速隧道密集，雨季隧道出口减速防突发降雨。
+· 随车已准备好氧气瓶、保温杯与零食。
 
-💡 【贴心关怀与注意事项】
-1. 第一晚住在低海拔的康定 (2560m) 特别有利于适应高原，今晚不要洗长热水澡或剧烈运动，预防感冒及高反；
-2. 高原紫外线渐强，记得带好遮阳帽、墨镜与防晒霜；
-3. 随车已准备好便携氧气瓶、保温水杯与高热量零食，安心出发！
+💖 祝我们第一天行程浪漫愉快！"""
 
-💖 祝我们的川西秘境之旅第一天浪漫愉快！"""
-
-    send_msg(token, msg_demo)
+    send_elegant_text_msg(token, elegant_text)
 
 if __name__ == "__main__":
-    send_romantic_demo()
+    run()
