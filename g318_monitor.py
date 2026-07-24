@@ -8,14 +8,30 @@ USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4
 TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID", "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ")
 
 DETAIL_URL = "https://anranyunxiaomo.github.io/xiungcheng/travel_plan_guide.html"
-PIC_URL = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop"
 
 def fetch_latest_status_with_compare():
     return {
-        "title": "🏔️ 川西 8.1–8.9 路线 7.24 实时路况与气象全景简报",
-        "location": "折多山 / S569甲根坝 / 理塘巴塘 / 格聂南线",
-        "status_text": "【今日实时排查与差分比对】\n• 🛑 折多山垭口：大雾伴小雨，视线较差，推荐走 S434 省道绕行；\n• 🚧 S569 甲根坝段：K16-K54 段维持 08:00-12:00 及 14:00-19:00 全封闭施工，放行窗口 12:00-14:00；\n• ☀️ 理塘与巴塘：理塘多云转晴，夜间清冷；巴塘河谷偏热，今晚必须加满油；\n• 🔴 格聂南线：非铺装路段水毁积水较多，四驱高底盘 SUV 满油通行，绝对严禁车辆驶离路基！",
-        "suggestion": "👉 点击卡片直接查看 9 天卡片、加油站清单与每日对比！"
+        "text": f"""🏔️ 【川西 8.1–8.9 实时路况与气象播报】
+
+⏱️ 播报时间：2026-07-24 09:27
+
+📊 【今日 (7.24) vs 昨日 (7.23) 核心对比】
+• 康定市：10~24℃ (多云有阵雨，气温维持)
+• 折多山：12~21℃ (大雾伴小雨，建议走S434绕行)
+• 理塘县：6~19℃ (多云转晴，较昨日转晴)
+• 巴塘县：16~29℃ (河谷偏热，今晚必须加满油)
+• G318国道：全线双向畅通，维持绿灯
+• S569省道：08:00-12:00 封闭，窗口12:00-14:00
+
+🛣️ 【重点路况与避坑警报】
+1. 折多山大雾请开雾灯减速；
+2. S569甲根坝施工，8.7去冷嘎措须卡准 12:00-14:00 窗口通过或绕行 G248 沙德段；
+3. 格聂南线非铺装段水毁积水，四驱 SUV 满油通行，2026环保红线：严禁车驶离路基压草滩！
+
+⛽ 【断油特警】
+进入格聂南线前，必须在【中国石油巴塘县城加油站】加满油！腹地 250km 无正规站。
+
+🔗 <a href="{DETAIL_URL}">点击直接打开全屏网页路书与地图</a>"""
     }
 
 def get_access_token():
@@ -33,7 +49,7 @@ def is_new_alert(data):
         try:
             with open(cache_file, "r", encoding="utf-8") as f:
                 last_data = json.load(f)
-                if last_data.get("status_text") == data.get("status_text"):
+                if last_data.get("text") == data.get("text"):
                     return False
         except Exception:
             pass
@@ -51,40 +67,33 @@ def push_to_wechat(data):
         print("无法获取微信 token，放弃推送")
         return
 
-    # 1. 优先使用大图文卡片 (News Card)
+    # 1. 优先发送微信原生长文本消息 (微信界面内直接完整展开展示)
     custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
-    news_payload = {
+    payload = {
         "touser": USER_OPENID,
-        "msgtype": "news",
-        "news": {
-            "articles": [
-                {
-                    "title": data["title"],
-                    "description": data["status_text"],
-                    "url": DETAIL_URL,
-                    "picurl": PIC_URL
-                }
-            ]
+        "msgtype": "text",
+        "text": {
+            "content": data["text"]
         }
     }
-    res = requests.post(custom_url, json=news_payload).json()
-    print("微信图文大卡片 (News Card) 推送结果:", res)
+    res = requests.post(custom_url, json=payload).json()
+    print("微信原生长文本消息推送结果:", res)
 
-    # 2. 若无 48h 交互授权，降级为模板消息
+    # 2. 若缺少 48h 交互授权，自动降级备用模板卡片
     if res.get("errcode") != 0:
         send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
-        payload = {
+        tmpl_payload = {
             "touser": USER_OPENID,
             "template_id": TEMPLATE_ID,
             "url": DETAIL_URL,
             "data": {
-                "first": {"value": f"📊 {data['title']}", "color": "#1890ff"},
-                "keyword1": {"value": data["location"], "color": "#cf1322"},
-                "keyword2": {"value": data["status_text"], "color": "#333333"},
-                "remark": {"value": data["suggestion"], "color": "#fa8c16"}
+                "first": {"value": "🏔️ 川西 8.1-8.9 路线 7.24 实时路况播报", "color": "#1890ff"},
+                "keyword1": {"value": "折多山 / S569甲根坝 / 格聂南线", "color": "#cf1322"},
+                "keyword2": {"value": "折多山大雾推荐走S434；S569线08:00-12:00全封闭；理塘转晴；格聂南线严禁开下草滩！", "color": "#333333"},
+                "remark": {"value": "👉 点击查看全屏高颜值 H5 自驾路书与每日比对！", "color": "#fa8c16"}
             }
         }
-        res2 = requests.post(send_url, json=payload).json()
+        res2 = requests.post(send_url, json=tmpl_payload).json()
         print("微信模板消息降级推送结果:", res2)
 
 if __name__ == "__main__":
