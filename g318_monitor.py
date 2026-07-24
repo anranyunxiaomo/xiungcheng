@@ -5,34 +5,6 @@ import requests
 APP_ID = os.environ.get("WECHAT_APP_ID", "wxf39166d6f2deab57")
 APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "c2fb35bda2fe52d795e6a64a70d3e38e")
 USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4")
-TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID", "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ")
-
-DETAIL_URL = "https://anranyunxiaomo.github.io/xiungcheng/travel_plan_guide.html"
-
-def fetch_latest_status_with_compare():
-    return {
-        "text": f"""🏔️ 【川西 8.1–8.9 实时路况与气象播报】
-
-⏱️ 播报时间：2026-07-24 09:27
-
-📊 【今日 (7.24) vs 昨日 (7.23) 核心对比】
-• 康定市：10~24℃ (多云有阵雨，气温维持)
-• 折多山：12~21℃ (大雾伴小雨，建议走S434绕行)
-• 理塘县：6~19℃ (多云转晴，较昨日转晴)
-• 巴塘县：16~29℃ (河谷偏热，今晚必须加满油)
-• G318国道：全线双向畅通，维持绿灯
-• S569省道：08:00-12:00 封闭，窗口12:00-14:00
-
-🛣️ 【重点路况与避坑警报】
-1. 折多山大雾请开雾灯减速；
-2. S569甲根坝施工，8.7去冷嘎措须卡准 12:00-14:00 窗口通过或绕行 G248 沙德段；
-3. 格聂南线非铺装段水毁积水，四驱 SUV 满油通行，2026环保红线：严禁车驶离路基压草滩！
-
-⛽ 【断油特警】
-进入格聂南线前，必须在【中国石油巴塘县城加油站】加满油！腹地 250km 无正规站。
-
-🔗 <a href="{DETAIL_URL}">点击直接打开全屏网页路书与地图</a>"""
-    }
 
 def get_access_token():
     token_url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={APP_ID}&secret={APP_SECRET}"
@@ -43,65 +15,91 @@ def get_access_token():
         print("获取 token 异常:", e)
         return None
 
-def is_new_alert(data):
-    cache_file = "last_traffic_status.json"
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, "r", encoding="utf-8") as f:
-                last_data = json.load(f)
-                if last_data.get("text") == data.get("text"):
-                    return False
-        except Exception:
-            pass
-
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False)
-    except Exception:
-        pass
-    return True
-
-def push_to_wechat(data):
-    token = get_access_token()
-    if not token:
-        print("无法获取微信 token，放弃推送")
-        return
-
-    # 优先发送微信原生长文本消息 (ensure_ascii=False 彻底避免乱码)
+def send_msg(token, content):
     custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
     payload = {
         "touser": USER_OPENID,
         "msgtype": "text",
         "text": {
-            "content": data["text"]
+            "content": content
         }
     }
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
-    
     res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信原生长文本消息推送结果:", res)
+    print("定时微信消息推送结果:", res)
+    return res
 
-    # 若缺少 48h 交互授权，降级备用模板卡片
-    if res.get("errcode") != 0:
-        send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
-        tmpl_payload = {
-            "touser": USER_OPENID,
-            "template_id": TEMPLATE_ID,
-            "url": DETAIL_URL,
-            "data": {
-                "first": {"value": "🏔️ 川西 8.1-8.9 路线 7.24 实时路况播报", "color": "#1890ff"},
-                "keyword1": {"value": "折多山 / S569甲根坝 / 格聂南线", "color": "#cf1322"},
-                "keyword2": {"value": "折多山大雾推荐走S434；S569线08:00-12:00全封闭；理塘转晴；格聂南线严禁开下草滩！", "color": "#333333"},
-                "remark": {"value": "👉 点击查看全屏高颜值 H5 自驾路书与每日比对！", "color": "#fa8c16"}
-            }
-        }
-        res2 = requests.post(send_url, json=tmpl_payload).json()
-        print("微信模板消息降级推送结果:", res2)
+def push_all_in_wechat():
+    token = get_access_token()
+    if not token:
+        print("无法获取微信 token，放弃推送")
+        return
+
+    msg1 = """🏔️ 【川西 8.1–8.9 全景路书·微信直展版 (上)】
+
+⏱️ 播报时间：2026-07-24 09:27
+
+📊 【今日 (7.24) vs 昨日 (7.23) 核心比对】
+• 康定市：10~24℃ (多云有阵雨，气温维持)
+• 折多山：12~21℃ (大雾伴小雨，建议走S434绕行)
+• 理塘县：6~19℃ (多云转晴，较昨日转晴)
+• 巴塘县：16~29℃ (河谷偏热，今晚必须加满油)
+• G318国道：全线双向畅通，维持绿灯
+• S569省道：08:00-12:00 封闭，窗口12:00-14:00
+
+⛽ 【沿线正规加油站分布清单】
+1. 雅安天全服务区 / 中石油康定城关站 (折东路)
+2. 中石油新都桥加油站 (G318国道旁镇中心)
+3. 中石油雅江城关加油站 (河口镇G318段)
+4. 中石油理塘城关站 / 理塘长青春站
+5. 中石油巴塘县城加油站 (🚨进格聂前的最后正规站！必须彻底加满！)
+6. 格聂南线腹地：❌无正规站，严禁空油深入！"""
+
+    msg2 = """📅 【8.1 – 8.9 逐日精细行程卡片 (第1部分)】
+
+🟢 DAY 1 (8.1) 成都 ➔ 康定 (海拔2560m)
+• 气温：14~22℃ (多云转小雨)
+• 降雨：19:00 以后集中
+• 注意事项：第一晚切勿洗长热水澡防高反，雅康高速隧道出口防强降雨。
+
+🟡 DAY 2 (8.2) 康定 ➔ 折多山 ➔ 鱼子西 ➔ 雅江 (海拔2600m)
+• 气温：折多山5~12℃ / 雅江16~25℃
+• 注意事项：早07:30出发翻折多山避堵；山顶大雾走S434绕新都桥；格底拉姆收约20元清洁费。
+
+🟢 DAY 3 (8.3) 雅江 ➔ 理塘 ➔ 巴塘 (海拔2560m)
+• 气温：理塘8~18℃ / 巴塘18~28℃
+• 🚨断油特警：必须在【中国石油巴塘县城加油站】彻底加满油箱！
+
+🔴 DAY 4 (8.4) 巴塘 ➔ 扎瓦拉 ➔ 夯达营地 ➔ 则巴村 (格聂南线)
+• 气温：扎瓦拉2~8℃ (极寒) / 则巴村6~15℃
+• 🚨高危警报：四驱高底盘SUV满油通行；扎瓦拉停留<20分钟；2026环保红线：严禁车驶离路基压草滩(违者重罚5万-20万)！"""
+
+    msg3 = """📅 【8.1 – 8.9 逐日精细行程卡片 (第2部分)】
+
+🟡 DAY 5 (8.5) 则巴村 ➔ 冷古寺 ➔ 铁匠山 ➔ 理塘/新都桥
+• 气温：6~15℃ (湿度大)
+• 注意事项：冷古寺徒步备防水鞋；格聂之眼严禁开车驶入草滩；出格聂抵理塘第一时间加满油。
+
+🟢 DAY 6 (8.6) 理塘 ➔ 新都桥 (海拔3300m)
+• 气温：理塘8~18℃ / 新都桥10~20℃
+• 注意事项：赶路休整日，新都桥十里长廊散步摄影；防范G318坡脚零星落石。
+
+🟡 DAY 7 (8.7) 新都桥 ➔ 冷嘎措 (海拔4500m) ➔ 新都桥
+• 气温：冷嘎措山顶3~11℃ (极寒强风)
+• 🚨修路管制：S569线K16-K54段08:00-12:00全封闭；方案1卡准12:00-14:00窗口通过；方案2走G248沙德绕行；带羽绒服保暖。
+
+🟡 DAY 8 (8.8) 新都桥 ➔ 折多山 ➔ 康定 ➔ 成都
+• 气温：折多山5~12℃ / 成都22~31℃
+• 注意事项：建议早07:00前翻折多山避堵；堵车走S434绕行。
+
+🟢 DAY 9 (8.9) 成都市区 ➔ 机场返程
+• 气温：23~32℃ (多云小雨)
+• 注意事项：还车前加满油，顺利返程！"""
+
+    send_msg(token, msg1)
+    send_msg(token, msg2)
+    send_msg(token, msg3)
 
 if __name__ == "__main__":
-    current_data = fetch_latest_status_with_compare()
-    if is_new_alert(current_data):
-        push_to_wechat(current_data)
-    else:
-        print("轮询完成：数据比对无新突发差异，静默跳过微信推送。")
+    push_all_in_wechat()
