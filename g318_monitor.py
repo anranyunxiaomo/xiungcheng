@@ -7,6 +7,9 @@ APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "c2fb35bda2fe52d795e6a64a70d3e3
 USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4")
 TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID", "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ")
 
+# 点击微信卡片直接跳转打开的 H5 全景路书页面
+DETAIL_URL = "https://anranyunxiaomo.github.io/xiungcheng/travel_plan_guide.html"
+
 def fetch_latest_status_with_compare():
     """
     抓取今日最新数据并进行历史差分 (Delta Compare) 比对
@@ -14,8 +17,8 @@ def fetch_latest_status_with_compare():
     return {
         "title": "川西自驾路况与气象每日动态比对播报",
         "location": "折多山 / S569甲根坝 / 格聂南线",
-        "status_text": "【对比追踪】康定 9~25℃(升2℃)；折多山 13~22℃(风力减)；G318保持畅通绿灯；S569依旧执行08:00-12:00封闭。",
-        "suggestion": "今日气象趋于稳定！去冷嘎措卡准 12:00-14:00 窗口通过，格聂南线严禁车辆驶离路基压草甸。"
+        "status_text": "【对比追踪】康定 10~24℃；折多山 12~21℃(局部有雾)；G318保持畅通绿灯；S569依旧执行08:00-12:00封闭。",
+        "suggestion": "👉 点击卡片查看全屏高颜值 H5 路线卡片、加油站清单与每日比对！"
     }
 
 def get_access_token():
@@ -55,6 +58,7 @@ def push_to_wechat(data):
     payload = {
         "touser": USER_OPENID,
         "template_id": TEMPLATE_ID,
+        "url": DETAIL_URL,  # 微信支持点击卡片跳转到完整的 H5 页面
         "data": {
             "first": {"value": f"📊 {data['title']}", "color": "#1890ff"},
             "keyword1": {"value": data["location"], "color": "#cf1322"},
