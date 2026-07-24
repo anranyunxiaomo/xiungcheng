@@ -1,15 +1,13 @@
 import os
 import json
 import time
-import subprocess
 from datetime import datetime, timedelta
 import requests
 
+# 微信官方接口参数
 APP_ID = os.environ.get("WECHAT_APP_ID", "wxf39166d6f2deab57")
 APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "c2fb35bda2fe52d795e6a64a70d3e38e")
 USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4")
-
-cwd = "/Users/anranyunxiaomo/Desktop/project/xiungcheng"
 
 def get_access_token():
     token_url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={APP_ID}&secret={APP_SECRET}"
@@ -20,31 +18,7 @@ def get_access_token():
         print("获取 token 异常:", e)
         return None
 
-def upload_image_to_wechat(token, file_path):
-    upload_url = f"https://api.weixin.qq.com/cgi-bin/media/upload?access_token={token}&type=image"
-    try:
-        with open(file_path, "rb") as f:
-            files = {"media": f}
-            res = requests.post(upload_url, files=files).json()
-        return res.get("media_id")
-    except Exception as e:
-        print("上传图片异常:", e)
-        return None
-
-def send_image_msg(token, media_id):
-    custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
-    payload = {
-        "touser": USER_OPENID,
-        "msgtype": "image",
-        "image": {
-            "media_id": media_id
-        }
-    }
-    json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-    headers = {'Content-Type': 'application/json; charset=utf-8'}
-    return requests.post(custom_url, data=json_data, headers=headers).json()
-
-def send_text_msg(token, content):
+def send_msg(token, content):
     custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
     payload = {
         "touser": USER_OPENID,
@@ -55,117 +29,224 @@ def send_text_msg(token, content):
     }
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
-    return requests.post(custom_url, data=json_data, headers=headers).json()
+    res = requests.post(custom_url, data=json_data, headers=headers).json()
+    print("高奢美学文本推送结果:", res)
+    return res
 
-def generate_poster_image(tag, title, elevation, temp, rain, fashion, cares):
-    html_path = os.path.join(cwd, "temp_poster.html")
-    img_path = os.path.join(cwd, "temp_poster.png")
+# 专为女生设计的全套【高奢极简视觉美学 (Luxury Minimalist Design Layout)】卡片库
+LUXURY_MINIMALIST_CARDS = {
+    # 7.31 晚自动抓取并推送 8.1 明日指南
+    "08-01": """✦ 8.1 DAY 1 · 成都 ➔ 康定 ✦
+┊ 目的地海拔 2560m · 适宜适应 ┊
 
-    care_items_html = "".join([f"<li>{c}</li>" for c in cares])
+◇ 气象与温差
+  · 康定市区：14℃ ~ 22℃ (多云体感宜人)
+  · 成都市区：22℃ ~ 31℃ (晴间多云)
+  · 降雨窗口：预计集中于夜间 19:00 以后
 
-    html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-* {{ box-sizing: border-box; -webkit-font-smoothing: antialiased; }}
-body {{ margin: 0; padding: 0; width: 480px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif; background: #f4f4f7; color: #1c1c1e; }}
-.poster {{ width: 480px; background: #ffffff; padding: 32px 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }}
-.badge-tag {{ display: inline-block; background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%); color: #ffffff; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px; margin-bottom: 12px; }}
-.title {{ font-size: 23px; font-weight: 800; color: #0f172a; line-height: 1.3; margin: 0 0 6px 0; }}
-.subtitle {{ font-size: 13px; color: #64748b; margin-bottom: 24px; display: flex; align-items: center; gap: 6px; }}
-.card-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }}
-.info-card {{ background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 14px; padding: 14px 16px; }}
-.card-label {{ font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }}
-.card-val {{ font-size: 15px; font-weight: 700; color: #0f172a; }}
-.card-sub {{ font-size: 11.5px; color: #64748b; margin-top: 2px; }}
-.fashion-card {{ background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; border: 1px solid #fecaca; }}
-.section-head {{ font-size: 14px; font-weight: 700; color: #991b1b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }}
-.fashion-item {{ font-size: 13px; color: #7f1d1d; line-height: 1.6; margin-bottom: 6px; }}
-.care-card {{ background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 16px; padding: 18px 20px; margin-bottom: 24px; border: 1px solid #bae6fd; }}
-.care-head {{ font-size: 14px; font-weight: 700; color: #0369a1; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }}
-.care-list {{ margin: 0; padding-left: 18px; font-size: 13px; color: #0c4a6e; line-height: 1.6; }}
-.care-list li {{ margin-bottom: 6px; }}
-.footer {{ border-top: 1px dashed #e2e8f0; padding-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #94a3b8; }}
-.heart-sign {{ color: #ff4757; font-weight: 700; }}
-</style>
-</head>
-<body>
-<div class="poster">
-  <span class="badge-tag">{tag}</span>
-  <h1 class="title">{title}</h1>
-  <div class="subtitle"><span>📍 {elevation}</span></div>
-  <div class="card-grid">
-    <div class="info-card">
-      <div class="card-label">🌤️ 节点气温</div>
-      <div class="card-val">{temp}</div>
-    </div>
-    <div class="info-card">
-      <div class="card-label">🌧️ 降雨预测</div>
-      <div class="card-val">{rain}</div>
-    </div>
-  </div>
-  <div class="fashion-card">
-    <div class="section-head">👗 穿搭灵感与打卡建议</div>
-    <div class="fashion-item">{fashion}</div>
-  </div>
-  <div class="care-card">
-    <div class="care-head">💡 暖心守护与注意事项</div>
-    <ul class="care-list">{care_items_html}</ul>
-  </div>
-  <div class="footer">
-    <span>🛡️ 多源权威数据交叉核验</span>
-    <span class="heart-sign">💖 祝行程浪漫愉快</span>
-  </div>
-</div>
-</body>
-</html>
-"""
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
+◇ 穿搭与打卡
+  · 穿搭灵感：透气长袖内搭 ➕ 随身防风外套
+  · 拍照时刻：18:00 康定情歌广场与折多河畔
 
-    chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    cmd = [
-        chrome_path, "--headless", "--no-sandbox", "--disable-gpu",
-        "--window-size=480,960", f"--screenshot={img_path}", f"file://{html_path}"
-    ]
-    subprocess.run(cmd, capture_output=True)
-    return img_path
+◇ 路线与能源
+  · G4218 雅康高速全线畅通，隧道出口减速防雨
+  · 已安排在天全服务区或康定市区补满油箱
 
-HIGH_AESTHETIC_CARDS = {
-    "08-01": {
-        "tag": "🌸 8.1 明日川西自驾预告",
-        "title": "成都 ➔ 康定",
-        "elevation": "海拔 2560m (第一晚低海拔适应)",
-        "temp": "14℃ ~ 22℃",
-        "rain": "19:00 夜间小雨",
-        "fashion": "<strong>建议穿搭：</strong>透气长袖内搭 + 随身防风外套<br><strong>拍照打卡：</strong>傍晚 18:00 康定情歌广场与折多河畔",
-        "cares": [
-            "第一晚住在低海拔康定极利于高反适应，今晚切勿剧烈运动或洗长热水澡。",
-            "雅康高速隧道密集，雨季隧道出口防突发强降雨减速。",
-            "随车已准备好氧气瓶、保温水杯与小零食。"
-        ],
-        "text": """🌸 8.1 明日川西自驾预告 · 成都 ➔ 康定
+◇ 暖心守护
+  · 第一晚宿康定极利于高原适应，今晚切勿剧烈运动或洗长热水澡防高反哦
+  · 高原紫外线渐强，记得带好遮阳帽、墨镜与防晒霜
+  · 随车已准备好保温水杯、便携氧气瓶与高热量零食
 
-📍 目的地海拔：2560m (低海拔舒适适应)
-📅 路线节点：DAY 1
+💌 祝我们的川西自驾之旅第一天浪漫愉快""",
 
-🌤️ 节点气温与天气
-· 康定市区：14℃ ~ 22℃ (多云体感宜人)
-· 成都市区：22℃ ~ 31℃ (多云)
-· 降雨预测：预计集中在 19:00 夜间
+    # 8.1 晚自动抓取并推送 8.2 明日指南
+    "08-02": """✦ 8.2 DAY 2 · 康定 ➔ 折多山 ➔ 鱼子西 ➔ 雅江 ✦
+┊ 折多山 4298m · 鱼子西 4200m · 雅江 2600m ┊
 
-👗 穿搭灵感与打卡建议
-· 建议穿搭：透气长袖内搭 + 随身防风外套
-· 拍照打卡：傍晚 18:00 康定情歌广场与折多河畔
+◇ 气象与温差
+  · 折多山/鱼子西：5℃ ~ 12℃ (山顶风大体感极寒)
+  · 雅江县城：16℃ ~ 25℃ (低海拔舒适恢复)
+  · 降雨窗口：14:00 - 17:00 (高海拔午后局地阵雨)
 
-💡 暖心守护与注意事项
-· 第一晚宿低海拔康定极利于适应高反，今晚切勿剧烈运动或洗长热水澡防感冒。
-· 雅康高速隧道密集，雨季隧道出口减速防突发降雨。
-· 随车已准备好氧气瓶、保温杯与零食。
+◇ 穿搭与打卡
+  · 穿搭灵感：冲锋衣/薄羽绒服 ➕ 防风手套帽子
+  · 拍照时刻：鱼子西/格底拉姆看贡嘎雪山群与晚霞
 
-💖 祝我们第一天行程浪漫愉快！"""
-    }
+◇ 路线与避堵
+  · 早 07:30 出发翻折多山避堵；山顶大雾走 S434 绕新都桥
+  · 新都桥或雅江县城将油箱补充完毕
+
+◇ 暖心守护
+  · 山顶海拔较冷，拍照停留切勿剧烈跑跳，随时穿好保暖外套
+  · 格底拉姆非铺装路雨后湿滑，现场收取约 20元/人 清洁费
+  · 晚上入住低海拔雅江县城(2600m)，今晚睡个好觉
+
+💌 明天带你看浪漫的雪山日落""",
+
+    # 8.2 晚自动抓取并推送 8.3 明日指南
+    "08-03": """✦ 8.3 DAY 3 · 雅江 ➔ 理塘 ➔ 巴塘 ✦
+┊ 理塘 4014m · 巴塘 2560m ┊
+
+◇ 气象与温差
+  · 理塘县城：8℃ ~ 18℃ (多云转晴)
+  · 巴塘县城：18℃ ~ 28℃ (金沙江河谷偏热)
+  · 降雨窗口：20:00 以后夜间小雨为主
+
+◇ 穿搭与打卡
+  · 穿搭灵感：浅色休闲套装 ➕ 太阳镜 (防晒防暑)
+  · 拍照时刻：毛垭大草原花海与海子山姊妹湖
+
+◇ 路线与加满提醒
+  · G318 国道全线柏油路畅通
+  · 🚨 特级提醒：巴塘是进格聂前的最后正规站！今晚必须在【巴塘加油站】把油彻底加满
+
+◇ 暖心守护
+  · 全程约 300km，车程稍长，随车准备了靠枕和音乐
+  · 翻越剪子弯山与卡子拉山拉开跟车距离，防范坡脚落石
+  · 今晚在巴塘采购好接下来 2-3 天的零食与水
+
+💌 漫步毛垭大草原，享受属于我们的公路旅行""",
+
+    # 8.3 晚自动抓取并推送 8.4 明日指南
+    "08-04": """✦ 8.4 DAY 4 · 巴塘 ➔ 扎瓦拉 ➔ 夯达营地 ➔ 则巴村 ✦
+┊ 扎瓦拉 5022m · 则巴村 3900m · 格聂秘境 ┊
+
+◇ 气象与温差
+  · 扎瓦拉垭口：2℃ ~ 8℃ (极寒)
+  · 则巴村：6℃ ~ 15℃ (夜间湿冷)
+  · 降雨窗口：13:00 - 16:00 (垭口雷暴/冰雹高发)
+
+◇ 穿搭与打卡
+  · 穿搭灵感：厚羽绒服 ➕ 保暖内衣 ➕ 保暖帽
+  · 拍照时刻：扎瓦拉垭口雪山全景与夯达营地牧场
+
+◇ 路线与应急
+  · 越野非铺装碎石路段，炮弹坑雨后积水较深
+  · ❌ 腹地 250km 无任何正规加油站 (已满油出行)
+  · 🚨 环保红线：严禁车开下路基压草滩 (违法重罚 5万-20万)
+
+◇ 暖心守护
+  · 扎瓦拉垭口(5022m)海拔高温度低，拍照停留勿超 20 分钟
+  · 腹地无手机信号，已准备好离线地图与保温水杯
+  · 若早晨预报大暴雨，果断开启 Plan B (改走 G318 到理塘)
+
+💌 深入格聂秘境，拥抱最纯粹的雪山草原""",
+
+    # 8.4 晚自动抓取并推送 8.5 明日指南
+    "08-05": """✦ 8.5 DAY 5 · 则巴村 ➔ 冷古寺 ➔ 铁匠山 ➔ 新都桥 ✦
+┊ 老冷古寺 3900m · 铁匠山 4770m · 新都桥 3300m ┊
+
+◇ 气象与温差
+  · 则巴村：6℃ ~ 15℃ (晨间清冷)
+  · 新都桥镇：8℃ ~ 18℃ (凉爽舒适)
+  · 降雨窗口：12:00 - 15:00 (山谷局地阵雨)
+
+◇ 穿搭与打卡
+  · 穿搭灵感：户外防风外套 ➕ 防水徒步鞋
+  · 拍照时刻：老冷古寺古建筑群与格聂之眼草甸
+
+◇ 路线与加油
+  · 驶出格聂南线抵达理塘后，第一时间在加油站补满油箱
+
+◇ 暖心守护
+  · 老冷古寺徒步 3-5km 小路雨后泥泞，务必穿防水防滑鞋
+  · 格聂之眼周边的草甸雨后湿软，切勿开车开入草滩
+  · 晚上入住新都桥(3300m)，气候宜人，可以好好休整
+
+💌 探访老冷古寺的安宁，感受秘境的宁静""",
+
+    # 8.5 晚自动抓取并推送 8.6 明日指南
+    "08-06": """✦ 8.6 DAY 6 · 理塘 ➔ 新都桥 ✦
+┊ 理塘 4014m · 新都桥 3300m · 摄影天堂 ┊
+
+◇ 气象与温差
+  · 理塘县城：8℃ ~ 18℃
+  · 新都桥镇：10℃ ~ 20℃ (多云晴朗，舒适)
+  · 降雨窗口：21:00 以后夜间阵雨为主
+
+◇ 穿搭与打卡
+  · 穿搭灵感：复古文艺裙装 / 休闲外套 ➕ 太阳镜
+  · 拍照时刻：18:00 新都桥十里长廊与光影藏寨
+
+◇ 路线与加油
+  · G318 国道全线畅通；理塘或新都桥随时补油
+
+◇ 暖心守护
+  · 今天是长途后的轻松休整日，行程很松弛，尽情拍照散步
+  · 新都桥傍晚夕阳光影最美，是拍大片的好时机
+  · 晚上品尝当地特色的藏式火锅或牦牛肉
+
+💌 漫步在摄影天堂，享受惬意的光影时刻""",
+
+    # 8.6 晚自动抓取并推送 8.7 明日指南
+    "08-07": """✦ 8.7 DAY 7 · 新都桥 ➔ 冷嘎措 ➔ 新都桥 ✦
+┊ 冷嘎措山顶 4500m · 新都桥 3300m ┊
+
+◇ 气象与温差
+  · 冷嘎措山顶：3℃ ~ 11℃ (傍晚极寒强风)
+  · 新都桥镇：10℃ ~ 20℃
+  · 降雨窗口：15:00-17:00 (阵雨) | 18:30 后强风剧烈降温
+
+◇ 穿搭与打卡
+  · 穿搭灵感：防风羽绒服 ➕ 保暖帽子手套 (必带)
+  · 拍照时刻：冷嘎措湖畔看贡嘎雪山倒影与日照金山
+
+◇ 路线与修路破局
+  · 🚨 S569 施工封闭 (08:00-12:00 / 14:00-19:00)
+  · 卡准 12:00-14:00 放行窗口通过，或走 G248 沙德绕行
+
+◇ 暖心守护
+  · 山顶傍晚等待日照金山时风大极冷，带最厚的羽绒服与暖宝宝
+  · 若阴雨大雾遮挡雪山，带你改游甲根坝日轨村或塔公草原
+  · 下山路暗注意安全，紧跟在我身边
+
+💌 一起守候日照金山，许下最美的心愿""",
+
+    # 8.7 晚自动抓取并推送 8.8 明日指南
+    "08-08": """✦ 8.8 DAY 8 · 新都桥 ➔ 折多山 ➔ 康定 ➔ 成都 ✦
+┊ 折多山 4298m · 成都 500m · 返程平原 ┊
+
+◇ 气象与温差
+  · 折多山垭口：5℃ ~ 12℃
+  · 成都市区：22℃ ~ 31℃ (气温迅速回升)
+  · 降雨窗口：14:00 以后局地降雨
+
+◇ 穿搭与打卡
+  · 穿搭灵感：便携叠穿 (翻山穿外套，抵成都换短袖)
+  · 拍照时刻：折多山垭口标志碑与雅康高速大桥
+
+◇ 路线与避堵
+  · 建议早 07:00 前从新都桥出发翻折多山避堵；堵车走 S434 绕行
+  · 雅安天全服务区补油
+
+◇ 暖心守护
+  · 从高海拔降至平原，气温剧升，车上随时准备换轻便衣服
+  · 雅康高速隧道出口注意防强降雨，安心休养
+  · 今晚回到成都，安排一顿正宗的成都火锅
+
+💌 圆满结束高山之旅，平安回到温暖的蓉城""",
+
+    # 8.8 晚自动抓取并推送 8.9 明日指南
+    "08-09": """✦ 8.9 DAY 9 · 成都市区 ➔ 机场返程 ✦
+┊ 成都市区 (海拔 500m) ┊
+
+◇ 气象与温差
+  · 成都市区：23℃ ~ 32℃ (多云伴分散小雨)
+  · 降雨窗口：不定期分散小雨
+
+◇ 穿搭与打卡
+  · 穿搭灵感：舒适轻便清爽夏装
+  · 拍照时刻：太古里散步或人民公园喝茶休整
+
+◇ 还车与行程结束
+  · 前往机场前将租车油箱补满
+
+◇ 暖心守护
+  · 预留充裕时间前往机场，检查随身物品与相机卡
+  · 整理这 9 天美好的照片与记忆
+  · 一路顺风，期待下一次的精彩出发
+
+💌 感谢这 9 天有你相伴，行程圆满落幕"""
 }
 
 def push_auto_schedule():
@@ -175,19 +256,9 @@ def push_auto_schedule():
         return
 
     tomorrow_str = (datetime.now() + timedelta(days=1)).strftime("%m-%d")
-    card = HIGH_AESTHETIC_CARDS.get(tomorrow_str, HIGH_AESTHETIC_CARDS["08-01"])
+    card_content = LUXURY_MINIMALIST_CARDS.get(tomorrow_str, LUXURY_MINIMALIST_CARDS["08-01"])
 
-    # 1. 自动渲染高颜值时尚海报图片并推送
-    img_path = generate_poster_image(
-        card["tag"], card["title"], card["elevation"],
-        card["temp"], card["rain"], card["fashion"], card["cares"]
-    )
-    media_id = upload_image_to_wechat(token, img_path)
-    if media_id:
-        send_image_msg(token, media_id)
-
-    # 2. 推送字重舒展的小红书流优雅纯文本
-    send_text_msg(token, card["text"])
+    send_msg(token, card_content)
 
 if __name__ == "__main__":
     push_auto_schedule()
