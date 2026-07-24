@@ -21,7 +21,7 @@ def send_perfect_text():
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 诗意浪漫、语言好看、情感温度爆棚的高质感文案
+    # 包含 2026 互联网高赞推荐餐厅与完美排版格式
     perfect_design_text = f"""🌸 明日路书 · 成都市 ➔ 康定市
 📍 目的地海拔：2560m (温柔适应高原)
 ⏱️ 30分钟实时雷达校对：{timestamp}
@@ -34,6 +34,11 @@ def send_perfect_text():
 【 🚦 路线路况与安全 】
 • 途经 G4218 雅康高速 · 全线畅通｜穿越云端隧道，驶出时减速慢行
 • 沿途加油：雅安天全服务区 / 康定折东路城关站
+
+【 🍴 沿线高赞美食推荐 】
+• 尚品牛味汤锅 (溜溜城店)：鲜切牦牛肉汤锅，汤头极鲜
+• 菌王府野生菌 / 藏佳宴：正宗藏家特色土火锅
+• 小吃地标：水井子康定凉粉 ➕ 将军桥凉粉
 
 【 🚻 沿线干净洗手间 】
 • 首推雅安天全服务区 (星级干净，安心使用)
@@ -63,7 +68,7 @@ def send_perfect_text():
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信诗意高质感路书推送结果:", res)
+    print("微信全量美食高质感路书推送结果:", res)
 
     if res.get("errcode") != 0:
         tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
@@ -73,7 +78,7 @@ def send_perfect_text():
             "data": {
                 "first": {"value": "🌸 明日路书 · 成都市 ➔ 康定市 (2560m)", "color": "#1890ff"},
                 "keyword1": {"value": "G4218雅康高速全线畅通 | 康定: 14~22℃ 宜人", "color": "#cf1322"},
-                "keyword2": {"value": "【诗意守护】今晚宿低海拔康定适应，备好温水防晒与零食", "color": "#333333"},
+                "keyword2": {"value": "【美食高赞】尚品牛味汤锅/菌王府野生菌 | 天全星级洗手间", "color": "#333333"},
                 "remark": {"value": "💖 愿我们的川西之旅满是浪漫与美好！", "color": "#fa8c16"}
             }
         }
