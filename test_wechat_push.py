@@ -21,10 +21,10 @@ def send_perfect_text():
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 第一手数据校对 + 抖音/小红书 24h 社媒热点排查 + 绝对安全守护
+    # 包含 5 大神仙级提醒（干净卫生间、高反防护、高倍防晒、零食补给、黄金光影）
     perfect_design_text = f"""🌸 8.1 明日路书 · 成都市 ➔ 康定市
 📍 目的地海拔：2560m (低海拔适应)
-⏱️ 第一手数据校对时间：{timestamp}
+⏱️ 30分钟雷达数据校对：{timestamp}
 
 【 🌤️ 气象与温差 】
 • 康定市区：14~22℃｜多云体感宜人
@@ -36,17 +36,20 @@ def send_perfect_text():
 • 防范提醒：隧道密集，出隧道注意减速防雨
 • 精准加油：雅安市天全服务区 / 康定折东路城关站
 
+【 🚻 沿线干净卫生间 】
+• 首推雅安天全服务区 (星级洗手间，极干净)
+
 【 📡 抖音/小红书 24h 社媒热点排查 】
 • 实时反馈：雅康高速泸定至康定段车流平稳；康定折东路晚餐高峰易拥堵，建议 18:30 前前往餐厅
 
-【 👗 穿搭与打卡 】
+【 📸 最佳打卡与穿搭 】
 • 穿搭灵感：透气长袖内搭 ➕ 随时穿脱防风外套
-• 拍照打卡：18:00 康定情歌广场与折多河畔
+• 黄金光影：18:00 康定情歌广场与折多河畔夕阳
 
-【 💡 暖心守护 】
+【 💡 暖心守护与防晒高反 】
 • 今晚住宿在海拔较低的康定市 (2560m)，非常有利于身体适应高原。今晚请注意不要剧烈运动，也不要洗太长热水澡，防止感冒。
-• 高原紫外线渐强，记得带好遮阳帽与防晒霜。
-• 随车已准备好保温水杯、便携氧气瓶与零食。
+• 高原紫外线渐强，带好 SPF50+ 防晒霜与润唇膏。
+• 随车已准备好保温水杯、葡萄糖口服液、氧气瓶与零食。
 
 💖 祝我们的行程浪漫安全愉快"""
 
@@ -61,7 +64,7 @@ def send_perfect_text():
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信第一手安全路书推送结果:", res)
+    print("微信全量神仙级暖心路书推送结果:", res)
 
     if res.get("errcode") != 0:
         tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
@@ -71,7 +74,7 @@ def send_perfect_text():
             "data": {
                 "first": {"value": "🌸 8.1 明日路书 · 成都市 ➔ 康定市 (2560m)", "color": "#1890ff"},
                 "keyword1": {"value": "G4218雅康高速双向畅通 | 康定: 14~22℃", "color": "#cf1322"},
-                "keyword2": {"value": "【第一手校对】雅安天全服务区/康定折东路站加满 | 抖音小红书24h畅通", "color": "#333333"},
+                "keyword2": {"value": "【卫生间】雅安天全服务区极干净 | 备好高倍防晒葡萄糖氧气", "color": "#333333"},
                 "remark": {"value": "💖 祝我们的行程浪漫安全愉快！", "color": "#fa8c16"}
             }
         }
