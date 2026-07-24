@@ -67,7 +67,7 @@ def push_to_wechat(data):
         print("无法获取微信 token，放弃推送")
         return
 
-    # 1. 优先发送微信原生长文本消息 (微信界面内直接完整展开展示)
+    # 优先发送微信原生长文本消息 (ensure_ascii=False 彻底避免乱码)
     custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
     payload = {
         "touser": USER_OPENID,
@@ -76,10 +76,13 @@ def push_to_wechat(data):
             "content": data["text"]
         }
     }
-    res = requests.post(custom_url, json=payload).json()
+    json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    
+    res = requests.post(custom_url, data=json_data, headers=headers).json()
     print("微信原生长文本消息推送结果:", res)
 
-    # 2. 若缺少 48h 交互授权，自动降级备用模板卡片
+    # 若缺少 48h 交互授权，降级备用模板卡片
     if res.get("errcode") != 0:
         send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
         tmpl_payload = {

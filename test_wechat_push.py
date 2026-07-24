@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 
 APP_ID = "wxf39166d6f2deab57"
@@ -18,7 +19,6 @@ def send_native_text():
         print("获取 token 失败")
         return
 
-    # 精简到微信原生文本消息限制（2048字节以内），微信窗口内直接完整原生展开！
     text_content = f"""🏔️ 【川西 8.1–8.9 实时路况与气象播报】
 
 ⏱️ 播报时间：2026-07-24 09:27
@@ -50,8 +50,12 @@ def send_native_text():
         }
     }
     
-    res = requests.post(custom_url, json=payload).json()
-    print("微信原生文本消息 (Native Text) 推送结果:", res)
+    # 关键点：禁用 ensure_ascii，强制使用 utf-8 字节编码发送，彻底解决微信端 \uXXXX 乱码！
+    json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    
+    res = requests.post(custom_url, data=json_data, headers=headers).json()
+    print("微信原生无乱码文本推送结果:", res)
 
 if __name__ == "__main__":
     send_native_text()
