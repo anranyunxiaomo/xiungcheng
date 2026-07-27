@@ -21,10 +21,10 @@ def send_perfect_text():
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 专属“你”视角·诗意浪漫落款
-    perfect_design_text = f"""🌸 明日路书 · 成都市 ➔ 康定市
+    # 包含原计划路线、变动原因、最新走法与耗时说明的 8.1 专属卡片
+    perfect_design_text = f"""🌸 8.1 明日路书 · 成都市 ➔ 康定市
 📍 目的地海拔：2560m (温柔适应高原)
-⏱️ 30分钟实时雷达校对：{timestamp}
+⏱️ 第一手实时校对：{timestamp}
 
 【 🌤️ 天气与温柔气温 】
 • 康定：14~22℃ 晴多云｜微风抚过山谷，体感非常舒适
@@ -32,8 +32,11 @@ def send_perfect_text():
 • 降雨：预计 19:00 后夜间小雨倾听雨声
 
 【 🚦 路线路况与安全 】
-• 途经 G4218 雅康高速 · 全线畅通｜穿越云端隧道，驶出时减速慢行
-• 沿途加油：雅安天全服务区 / 康定折东路城关站
+• 原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区
+• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管控
+• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定
+• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟
+• 精准加油：雅安天全服务区 / 康定折东路城关站
 
 【 🍴 沿线高赞美食推荐 】
 • 尚品牛味汤锅 (溜溜城店)：鲜切牦牛肉汤锅，汤头极鲜
@@ -44,7 +47,7 @@ def send_perfect_text():
 • 首推雅安天全服务区 (星级干净，安心使用)
 
 【 📡 抖音/小红书 24h 社媒热点排查 】
-• 实时路况：雅康高速泸定至康定段车流平稳；康定折东路晚餐高峰易拥堵，建议 18:30 前前往餐厅
+• 实时路况：雅康高速泸定站分流下站秩序良好；康定折东路晚餐高峰易拥堵，建议 18:30 前前往餐厅
 
 【 📸 穿搭灵感与光影时刻 】
 • 穿搭建议：透气长袖 ➕ 轻盈防风外套
@@ -68,7 +71,7 @@ def send_perfect_text():
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信“你”视角路书推送结果:", res)
+    print("微信 8.1 精细路况说明推送结果:", res)
 
     if res.get("errcode") != 0:
         tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
@@ -76,9 +79,9 @@ def send_perfect_text():
             "touser": USER_OPENID,
             "template_id": TEMPLATE_ID,
             "data": {
-                "first": {"value": "🌸 明日路书 · 成都市 ➔ 康定市 (2560m)", "color": "#1890ff"},
-                "keyword1": {"value": "G4218雅康高速全线畅通 | 康定: 14~22℃ 宜人", "color": "#cf1322"},
-                "keyword2": {"value": "【专属守护】今晚宿低海拔康定适应，备好温水防晒与零食", "color": "#333333"},
+                "first": {"value": "🌸 8.1 明日路书 · 成都市 ➔ 康定市 (2560m)", "color": "#1890ff"},
+                "keyword1": {"value": "原计划雅康高速直达 | 因强降雨防汛在泸定站分流", "color": "#cf1322"},
+                "keyword2": {"value": "【最新走法】泸定站下高速接G318瓦斯沟老路(49km)多耗时20分", "color": "#333333"},
                 "remark": {"value": "💖 祝你第一天行程浪漫愉快！", "color": "#fa8c16"}
             }
         }
