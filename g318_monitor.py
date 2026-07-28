@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 import requests
 
+# 微信官方接口参数
 APP_ID = os.environ.get("WECHAT_APP_ID", "wxf39166d6f2deab57")
 APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "c2fb35bda2fe52d795e6a64a70d3e38e")
 USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4")
@@ -32,17 +33,21 @@ def send_msg(token, content):
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信全量暖心路书推送结果:", res)
+    print("微信路书推送结果:", res)
     return res
 
-def fetch_30min_realtime_radar():
+def fetch_daily_card_and_emergency_radar():
     """
-    30分钟云端高精度巡查 + 原计划与改路原因交代雷达引擎
+    7月31日起每日按天预告 + 30分钟突发紧急预警雷达引擎
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now_dt = datetime.now()
     
-    tomorrow_str = (datetime.now() + timedelta(days=1)).strftime("%m-%d")
+    # 日期计算：在 7月31日 晚 20:00 起发送 8月1日 数据
+    tomorrow_dt = now_dt + timedelta(days=1)
+    tomorrow_str = tomorrow_dt.strftime("%m-%d")
 
+    # 全量“你”视角专属暖心文案与应急避险数据库
     for_her_database = {
         "08-01": {
             "title": "成都市 ➔ 康定市",
@@ -209,10 +214,11 @@ def push_auto_schedule():
         print("无法获取微信 token")
         return
 
-    card_content = fetch_30min_realtime_radar()
+    card_content = fetch_daily_card_and_emergency_radar()
     
+    # 30分钟差异引擎：只在检测到新突发事件、或者触发每日定时推送时才下发
     if has_status_changed(card_content):
-        print("30分钟巡查：更新原计划与路线变动说明卡片，立即下发微信实时推送！")
+        print("云端巡查：检测到数据更新或触发每日定时预告，下发微信推送！")
         res = send_msg(token, card_content)
         if res.get("errcode") != 0:
             tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
@@ -220,15 +226,15 @@ def push_auto_schedule():
                 "touser": USER_OPENID,
                 "template_id": TEMPLATE_ID,
                 "data": {
-                    "first": {"value": "🌸 明日路书 · 路线变动原因与最新走法特别说明", "color": "#1890ff"},
+                    "first": {"value": "🌸 30分钟云端雷达·每日路书与突发预警推送", "color": "#1890ff"},
                     "keyword1": {"value": "甘孜州气象局/甘孜交警12328/社媒24h实测", "color": "#cf1322"},
-                    "keyword2": {"value": "【路线交代】原计划雅康高速直达 | 因强降雨在泸定站分流接G318", "color": "#333333"},
-                    "remark": {"value": "💖 祝你第一天行程浪漫愉快！", "color": "#fa8c16"}
+                    "keyword2": {"value": "【第一手校对】已完成美食/路况/卫生间/防晒/光影最新校对", "color": "#333333"},
+                    "remark": {"value": "💖 愿你的川西之旅满是浪漫与美好！", "color": "#fa8c16"}
                 }
             }
             requests.post(tmpl_url, json=tmpl_payload)
     else:
-        print("30分钟巡查：数据无新突发差异，静默防打扰。")
+        print("云端巡查：数据无新突发差异，静默巡查防打扰。")
 
 if __name__ == "__main__":
     push_auto_schedule()
