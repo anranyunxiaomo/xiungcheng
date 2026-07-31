@@ -36,15 +36,21 @@ def send_msg(token, content):
     print("微信路书推送结果:", res)
     return res
 
+def fetch_beijing_time():
+    """
+    强制获取准确的北京时间 (UTC+8)
+    """
+    return datetime.utcnow() + timedelta(hours=8)
+
 def fetch_daily_card_and_emergency_radar():
     """
-    7月31日起每日按天预告 + 30分钟突发紧急预警雷达引擎
+    北京时间校准 + 每日按天预告 + 30分钟突发紧急预警雷达引擎
     """
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    now_dt = datetime.now()
+    beijing_dt = fetch_beijing_time()
+    timestamp = beijing_dt.strftime("%Y-%m-%d %H:%M")
     
-    # 日期计算：在 7月31日 晚 20:00 起发送 8月1日 数据
-    tomorrow_dt = now_dt + timedelta(days=1)
+    # 算第二天对应的日期字符串 (如 07-31 晚算出来是 08-01)
+    tomorrow_dt = beijing_dt + timedelta(days=1)
     tomorrow_str = tomorrow_dt.strftime("%m-%d")
 
     # 全量“你”视角专属暖心文案与应急避险数据库
@@ -191,7 +197,13 @@ def fetch_daily_card_and_emergency_radar():
 
     return card_text
 
-def has_status_changed(new_text):
+def has_status_changed(new_text, is_evening_push=False):
+    """
+    如果是每天北京时间 20:00~20:30 之间的全自动预告点，强行返回 True 触发下发
+    """
+    if is_evening_push:
+        return True
+
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
@@ -214,11 +226,14 @@ def push_auto_schedule():
         print("无法获取微信 token")
         return
 
+    beijing_dt = fetch_beijing_time()
+    # 判断是否处于北京时间每天 20:00 ~ 20:30 强制推预告窗口
+    is_evening_push = (beijing_dt.hour == 20 and beijing_dt.minute <= 30)
+
     card_content = fetch_daily_card_and_emergency_radar()
     
-    # 30分钟差异引擎：只在检测到新突发事件、或者触发每日定时推送时才下发
-    if has_status_changed(card_content):
-        print("云端巡查：检测到数据更新或触发每日定时预告，下发微信推送！")
+    if has_status_changed(card_content, is_evening_push):
+        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间检测到数据更新或处于 20:00 预告窗口，下发微信推送！")
         res = send_msg(token, card_content)
         if res.get("errcode") != 0:
             tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
@@ -234,7 +249,7 @@ def push_auto_schedule():
             }
             requests.post(tmpl_url, json=tmpl_payload)
     else:
-        print("云端巡查：数据无新突发差异，静默巡查防打扰。")
+        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 云端巡查：数据无新突发差异，静默巡查防打扰。")
 
 if __name__ == "__main__":
     push_auto_schedule()
