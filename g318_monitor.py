@@ -14,12 +14,15 @@ CACHE_FILE = "last_pushed_status.json"
 
 def get_access_token():
     token_url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={APP_ID}&secret={APP_SECRET}"
-    try:
-        r = requests.get(token_url).json()
-        return r.get("access_token")
-    except Exception as e:
-        print("获取 token 异常:", e)
-        return None
+    for attempt in range(3):
+        try:
+            r = requests.get(token_url, timeout=10).json()
+            if r.get("access_token"):
+                return r.get("access_token")
+        except Exception as e:
+            print(f"获取 token 第 {attempt+1} 次重试:", e)
+            time.sleep(1)
+    return None
 
 def send_msg(token, content):
     custom_url = f"https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
@@ -32,9 +35,16 @@ def send_msg(token, content):
     }
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
-    res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信路书推送结果:", res)
-    return res
+    
+    for attempt in range(3):
+        try:
+            res = requests.post(custom_url, data=json_data, headers=headers, timeout=10).json()
+            print("微信路书推送结果:", res)
+            return res
+        except Exception as e:
+            print(f"发送消息第 {attempt+1} 次重试:", e)
+            time.sleep(1)
+    return {"errcode": -1, "errmsg": "timeout"}
 
 def fetch_beijing_time():
     """
@@ -43,17 +53,12 @@ def fetch_beijing_time():
     return datetime.utcnow() + timedelta(hours=8)
 
 def fetch_daily_card_and_emergency_radar():
-    """
-    北京时间校准 + 每日按天预告 + 30分钟突发紧急预警雷达引擎
-    """
     beijing_dt = fetch_beijing_time()
     timestamp = beijing_dt.strftime("%Y-%m-%d %H:%M")
     
-    # 算第二天对应的日期字符串 (如 07-31 晚算出来是 08-01)
     tomorrow_dt = beijing_dt + timedelta(days=1)
     tomorrow_str = tomorrow_dt.strftime("%m-%d")
 
-    # 全量“你”视角专属暖心文案与应急避险数据库
     for_her_database = {
         "08-01": {
             "title": "成都市 ➔ 康定市",
@@ -195,12 +200,9 @@ def fetch_daily_card_and_emergency_radar():
 
 {data['wish']}"""
 
-    return card_text
+    return card_text, data
 
 def has_status_changed(new_text, is_evening_push=False):
-    """
-    如果是每天北京时间 20:00~20:30 之间的全自动预告点，强行返回 True 触发下发
-    """
     if is_evening_push:
         return True
 
@@ -227,29 +229,32 @@ def push_auto_schedule():
         return
 
     beijing_dt = fetch_beijing_time()
-    # 判断是否处于北京时间每天 20:00 ~ 20:30 强制推预告窗口
     is_evening_push = (beijing_dt.hour == 20 and beijing_dt.minute <= 30)
 
-    card_content = fetch_daily_card_and_emergency_radar()
+    card_content, data = fetch_daily_card_and_emergency_radar()
     
     if has_status_changed(card_content, is_evening_push):
         print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间检测到数据更新或处于 20:00 预告窗口，下发微信推送！")
         res = send_msg(token, card_content)
         if res.get("errcode") != 0:
             tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
+            first_line_weather = data['weather'].splitlines()[0]
+            first_line_traffic = data['traffic'].splitlines()[0]
+            first_line_food = data['food'].splitlines()[0]
             tmpl_payload = {
                 "touser": USER_OPENID,
                 "template_id": TEMPLATE_ID,
                 "data": {
-                    "first": {"value": "🌸 30分钟云端雷达·每日路书与突发预警推送", "color": "#1890ff"},
-                    "keyword1": {"value": "甘孜州气象局/甘孜交警12328/社媒24h实测", "color": "#cf1322"},
-                    "keyword2": {"value": "【第一手校对】已完成美食/路况/卫生间/防晒/光影最新校对", "color": "#333333"},
-                    "remark": {"value": "💖 愿你的川西之旅满是浪漫与美好！", "color": "#fa8c16"}
+                    "first": {"value": f"🌸 明日路书 · {data['title']} (海拔{data['elevation']})", "color": "#1890ff"},
+                    "keyword1": {"value": f"{first_line_weather}", "color": "#cf1322"},
+                    "keyword2": {"value": f"{first_line_traffic} | {first_line_food}", "color": "#333333"},
+                    "remark": {"value": f"{data['wish']}", "color": "#fa8c16"}
                 }
             }
-            requests.post(tmpl_url, json=tmpl_payload)
-    else:
-        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 云端巡查：数据无新突发差异，静默巡查防打扰。")
+            try:
+                requests.post(tmpl_url, json=tmpl_payload, timeout=10)
+            except Exception as e:
+                print("模板发送异常:", e)
 
 if __name__ == "__main__":
     push_auto_schedule()

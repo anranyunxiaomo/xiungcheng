@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from datetime import datetime
 
@@ -10,8 +11,15 @@ TEMPLATE_ID = "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ"
 
 def get_access_token():
     token_url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={APP_ID}&secret={APP_SECRET}"
-    r = requests.get(token_url).json()
-    return r.get("access_token")
+    for attempt in range(3):
+        try:
+            r = requests.get(token_url, timeout=10).json()
+            if r.get("access_token"):
+                return r.get("access_token")
+        except Exception as e:
+            print(f"获取 token 第 {attempt+1} 次重试:", e)
+            time.sleep(1)
+    return None
 
 def send_perfect_text():
     token = get_access_token()
@@ -21,7 +29,6 @@ def send_perfect_text():
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 包含原计划路线、变动原因、最新走法与耗时说明的 8.1 专属卡片
     perfect_design_text = f"""🌸 8.1 明日路书 · 成都市 ➔ 康定市
 📍 目的地海拔：2560m (温柔适应高原)
 ⏱️ 第一手实时校对：{timestamp}
@@ -70,23 +77,34 @@ def send_perfect_text():
     }
     json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     headers = {'Content-Type': 'application/json; charset=utf-8'}
-    res = requests.post(custom_url, data=json_data, headers=headers).json()
-    print("微信 8.1 精细路况说明推送结果:", res)
+    
+    res = None
+    for attempt in range(3):
+        try:
+            res = requests.post(custom_url, data=json_data, headers=headers, timeout=10).json()
+            print("微信 8.1 精细路况说明推送结果:", res)
+            break
+        except Exception as e:
+            print(f"发送消息第 {attempt+1} 次重试:", e)
+            time.sleep(1)
 
-    if res.get("errcode") != 0:
+    if res and res.get("errcode") != 0:
         tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
         tmpl_payload = {
             "touser": USER_OPENID,
             "template_id": TEMPLATE_ID,
             "data": {
                 "first": {"value": "🌸 8.1 明日路书 · 成都市 ➔ 康定市 (2560m)", "color": "#1890ff"},
-                "keyword1": {"value": "原计划雅康高速直达 | 因强降雨防汛在泸定站分流", "color": "#cf1322"},
-                "keyword2": {"value": "【最新走法】泸定站下高速接G318瓦斯沟老路(49km)多耗时20分", "color": "#333333"},
+                "keyword1": {"value": "康定: 14~22℃ 晴多云 | 成都: 22~31℃ 晴朗", "color": "#cf1322"},
+                "keyword2": {"value": "雅康高速泸定站分流接G318老路(49km) | 尚品牛味汤锅", "color": "#333333"},
                 "remark": {"value": "💖 祝你第一天行程浪漫愉快！", "color": "#fa8c16"}
             }
         }
-        res2 = requests.post(tmpl_url, json=tmpl_payload).json()
-        print("模板降级结果:", res2)
+        try:
+            res2 = requests.post(tmpl_url, json=tmpl_payload, timeout=10).json()
+            print("模板降级结果:", res2)
+        except Exception as e:
+            print("模板发送异常:", e)
 
 if __name__ == "__main__":
     send_perfect_text()
