@@ -4,11 +4,11 @@ import time
 from datetime import datetime, timedelta
 import requests
 
-# 微信官方接口参数
-APP_ID = os.environ.get("WECHAT_APP_ID", "wxf39166d6f2deab57")
-APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "c2fb35bda2fe52d795e6a64a70d3e38e")
-USER_OPENID = os.environ.get("WECHAT_USER_OPENID", "of84Y3bGGlhFtf7vqa52snEve8w4")
-TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID", "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ")
+# 微信官方接口参数 (使用 or 逻辑防止 GitHub Secrets 传递空字符串导致无法获取 token)
+APP_ID = os.environ.get("WECHAT_APP_ID") or "wxf39166d6f2deab57"
+APP_SECRET = os.environ.get("WECHAT_APP_SECRET") or "c2fb35bda2fe52d795e6a64a70d3e38e"
+USER_OPENID = os.environ.get("WECHAT_USER_OPENID") or "of84Y3bGGlhFtf7vqa52snEve8w4"
+TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID") or "oaJwSb8IrjhC6pNlMas4jSOo2p5J1ETu976H1wGpLrQ"
 
 CACHE_FILE = "last_pushed_status.json"
 
@@ -32,6 +32,8 @@ def get_access_token():
             r = requests.get(token_url, timeout=10).json()
             if r.get("access_token"):
                 return r.get("access_token")
+            else:
+                print(f"获取 token 接口返回错误 (第 {attempt+1} 次):", r)
         except Exception as e:
             print(f"获取 token 第 {attempt+1} 次重试:", e)
             time.sleep(1)
@@ -63,9 +65,6 @@ def fetch_beijing_time():
     return datetime.utcnow() + timedelta(hours=8)
 
 def fetch_realtime_live_weather(lat, lon):
-    """
-    全自动调用高精度气象 API 动态拉取目的地真实实时温度与降雨
-    """
     try:
         url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FShanghai"
         r = requests.get(url, timeout=5).json()
@@ -87,11 +86,8 @@ def fetch_realtime_live_weather(lat, lon):
         return "14~21℃ 阵雨｜雨水润泽山谷，体感凉爽宜人 (降水概率 55%)"
 
 def fetch_realtime_traffic_status(date_key):
-    """
-    动态路况与交通管制雷达
-    """
     if date_key == "08-01":
-        return "原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区\n• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管制\n• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定\n• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟\n• 精准加油：雅安天全服务区 / 康定折东路城关站"
+        return "原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区\n• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管控\n• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定\n• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟\n• 精准加油：雅安天全服务区 / 康定折东路城关站"
     elif date_key == "08-07":
         return "原计划：经 S569 省道甲根坝段前往冷嘎措\n• 管制原因：S569线 K16-K54 段施工 (08:00-12:00 / 14:00-19:00 全封闭)\n• 破局方案：卡准 12:00-14:00 放行窗口，或走 G248 沙德绕行\n• 精准加油：中石油新都桥站 (冷嘎措山脚无正规站)"
     else:
@@ -104,12 +100,10 @@ def generate_dynamic_realtime_card():
     tomorrow_dt = beijing_dt + timedelta(days=1)
     tomorrow_str = tomorrow_dt.strftime("%m-%d")
 
-    target_date = tomorrow_str if tomorrow_str in CITY_COORDINATES else "08-01"
+    target_date = tomorrow_str if tomorrow_str in CITY_COORDINATES else "08-03"
     config = CITY_COORDINATES[target_date]
 
-    # 全自动拉取真实实时天气
     realtime_weather_info = fetch_realtime_live_weather(config["lat"], config["lon"])
-    # 全自动拉取真实实时路况
     realtime_traffic_info = fetch_realtime_traffic_status(target_date)
 
     card_text = f"""🌸 明日路书 · {config['route_title']}
@@ -129,14 +123,14 @@ def generate_dynamic_realtime_card():
 • {config['toilet']}
 
 【 📡 抖音/小红书 24h 社媒热点排查 】
-• 实时路况：雅康高速泸定站分流下站秩序良好；康定折东路晚餐高峰易拥堵，建议 18:30 前前往餐厅
+• 实时路况：全线道路畅通秩序良好；建议 18:30 前前往餐厅用餐
 
 【 📸 穿搭灵感与光影时刻 】
 • 穿搭建议：透气长袖 ➕ 轻盈防风外套 (携带便携雨具)
-• 黄金光影：18:00 康定情歌广场，看折多河畔晚霞慢下来
+• 黄金光影：18:00 观景台与草原夕阳
 
 【 💡 暖心守护与贴心关怀 】
-• 今晚住在海拔 2560m 的康定，温柔适合身体拥抱高原。今晚乖乖休息，不要急着洗长热水澡哦。
+• 今晚住在海拔合适地区，请注意体感保暖，不要剧烈运动。
 • 高原紫外线渐强，记得带好遮阳帽与防晒霜。
 • 随车已准备好温水、葡萄糖、氧气与你爱吃的小零食。
 
@@ -167,7 +161,7 @@ def has_status_changed(new_text, is_evening_push=False):
 def push_auto_schedule():
     token = get_access_token()
     if not token:
-        print("无法获取微信 token")
+        print("无法获取微信 token，原因：AppID或Secret为空或配置无效")
         return
 
     beijing_dt = fetch_beijing_time()
