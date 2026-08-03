@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta
 import requests
 
-# 微信官方接口参数 (使用 or 逻辑防止 GitHub Secrets 传递空字符串导致无法获取 token)
+# 微信官方接口参数
 APP_ID = os.environ.get("WECHAT_APP_ID") or "wxf39166d6f2deab57"
 APP_SECRET = os.environ.get("WECHAT_APP_SECRET") or "c2fb35bda2fe52d795e6a64a70d3e38e"
 USER_OPENID = os.environ.get("WECHAT_USER_OPENID") or "of84Y3bGGlhFtf7vqa52snEve8w4"
@@ -17,10 +17,10 @@ CITY_COORDINATES = {
     "08-01": {"name": "康定市", "lat": 30.0489, "lon": 101.9614, "route_title": "成都市 ➔ 康定市", "elevation": "2560m (温柔适应高原)", "food": "尚品牛味汤锅 (溜溜城店) / 菌王府野生菌 / 康定凉粉", "toilet": "首推雅安天全服务区 (星级干净，安心使用)", "wish": "💖 祝你第一天行程浪漫愉快"},
     "08-02": {"name": "雅江县", "lat": 30.0324, "lon": 101.0153, "route_title": "康定市 ➔ 雅江县", "elevation": "折多山 4298m ➔ 雅江 2600m", "food": "雅江松茸炖土鸡 / 雅江特色松茸面 / 张艳烧烤", "toilet": "折多山垭口室内洗手间 (收费2元) / 新都桥酒店", "wish": "💖 愿你明天看到最浪漫的雪山日落"},
     "08-03": {"name": "巴塘县", "lat": 30.0743, "lon": 99.1060, "route_title": "雅江县 ➔ 理塘县 ➔ 巴塘县", "elevation": "理塘 4014m ➔ 巴塘 2560m", "food": "理塘仓央云阁 (千户藏寨) / 巴塘团结包子 / 希朵私房菜", "toilet": "理塘毛垭大草原游客中心卫生间 / 姊妹湖观景台", "wish": "💖 漫步大草原，愿你享受属于你的旅程"},
-    "08-04": {"name": "格聂南线", "lat": 29.8000, "lon": 99.6000, "route_title": "格聂南线越野腹地", "elevation": "扎瓦拉 5022m ➔ 则巴村 3900m", "food": "则巴村民宿藏家手抓牦牛肉 / 藏式暖心土火锅", "toilet": "腹地无公共洗手间，在巴塘出发前及民宿解决", "wish": "💖 深入格聂秘境，愿你拥抱最纯粹的雪山草原"},
+    "08-04": {"name": "格聂南线", "lat": 29.8000, "lon": 99.6000, "route_title": "格聂南线越野腹地", "elevation": "扎瓦拉 5022m ➔ 则巴村 3900m", "food": "则巴村民宿藏家手抓牦牛肉 / 藏式暖心土火锅", "toilet": "腹地无公共洗手间，在巴塘出发前及民宿解决", "wish": "💖 深入格聂秘境，愿你拥抱最纯粹的雪山草原 (🚨极寒保暖预警)"},
     "08-05": {"name": "新都桥", "lat": 30.0300, "lon": 101.5300, "route_title": "则巴村 ➔ 新都桥镇", "elevation": "老冷古寺 3900m ➔ 新都桥 3300m", "food": "塞外人家 (新都桥店) 鲜美野生菌汤锅 / 阿弥藏餐", "toilet": "理塘县城正规加油站及新都桥酒店卫生间", "wish": "💖 探访老冷古寺，愿你感受秘境的宁静"},
     "08-06": {"name": "新都桥", "lat": 30.0300, "lon": 101.5300, "route_title": "理塘县 ➔ 新都桥镇", "elevation": "理塘 4014m ➔ 新都桥 3300m", "food": "阿西土陶牦牛汤锅 / 云雪里甄选火锅", "toilet": "新都桥镇沿线正规餐厅与酒店卫生间", "wish": "💖 漫步摄影天堂，愿你享受惬意光影时刻"},
-    "08-07": {"name": "冷嘎措", "lat": 29.5000, "lon": 101.6000, "route_title": "新都桥 ➔ 冷嘎措", "elevation": "冷嘎措山顶 4500m ➔ 新都桥", "food": "甲根坝藏家热茶点心 ➕ 返回新都桥吃热腾腾羊肉汤", "toilet": "冷嘎措山脚驿站洗手间", "wish": "💖 守候日照金山，愿你许下最美心愿"},
+    "08-07": {"name": "冷嘎措", "lat": 29.5000, "lon": 101.6000, "route_title": "新都桥 ➔ 冷嘎措", "elevation": "冷嘎措山顶 4500m ➔ 新都桥", "food": "甲根坝藏家热茶点心 ➕ 返回新都桥吃热腾腾羊肉汤", "toilet": "冷嘎措山脚驿站洗手间", "wish": "💖 守候日照金山，愿你许下最美心愿 (🚨傍晚极寒强风预警)"},
     "08-08": {"name": "成都", "lat": 30.6586, "lon": 104.0648, "route_title": "新都桥 ➔ 成都", "elevation": "折多山 4298m ➔ 成都 500m", "food": "天全服务区椒麻鸡 / 成都正规蜀大侠老火锅", "toilet": "雅安天全服务区 (星级干净洗手间)", "wish": "💖 圆满结束高山之旅，愿你平安回到温暖蓉城"},
     "08-09": {"name": "成都", "lat": 30.6586, "lon": 104.0648, "route_title": "成都市区 ➔ 返程", "elevation": "成都市区 (海拔 500m)", "food": "成都陈麻婆豆腐 / 人民公园鹤鸣茶社盖碗茶", "toilet": "机场及市区正规卫生间", "wish": "💖 愿你的川西之旅，满是浪漫与美好"}
 }
@@ -54,7 +54,7 @@ def send_msg(token, content):
     for attempt in range(3):
         try:
             res = requests.post(custom_url, data=json_data, headers=headers, timeout=10).json()
-            print("微信路书推送结果:", res)
+            print("微信推送结果:", res)
             return res
         except Exception as e:
             print(f"发送消息第 {attempt+1} 次重试:", e)
@@ -87,7 +87,7 @@ def fetch_realtime_live_weather(lat, lon):
 
 def fetch_realtime_traffic_status(date_key):
     if date_key == "08-01":
-        return "原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区\n• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管控\n• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定\n• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟\n• 精准加油：雅安天全服务区 / 康定折东路城关站"
+        return "原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区\n• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管制\n• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定\n• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟\n• 精准加油：雅安天全服务区 / 康定折东路城关站"
     elif date_key == "08-07":
         return "原计划：经 S569 省道甲根坝段前往冷嘎措\n• 管制原因：S569线 K16-K54 段施工 (08:00-12:00 / 14:00-19:00 全封闭)\n• 破局方案：卡准 12:00-14:00 放行窗口，或走 G248 沙德绕行\n• 精准加油：中石油新都桥站 (冷嘎措山脚无正规站)"
     else:
@@ -100,7 +100,7 @@ def generate_dynamic_realtime_card():
     tomorrow_dt = beijing_dt + timedelta(days=1)
     tomorrow_str = tomorrow_dt.strftime("%m-%d")
 
-    target_date = tomorrow_str if tomorrow_str in CITY_COORDINATES else "08-03"
+    target_date = tomorrow_str if tomorrow_str in CITY_COORDINATES else "08-04"
     config = CITY_COORDINATES[target_date]
 
     realtime_weather_info = fetch_realtime_live_weather(config["lat"], config["lon"])
@@ -138,8 +138,13 @@ def generate_dynamic_realtime_card():
 
     return card_text, config, realtime_weather_info, realtime_traffic_info
 
-def has_status_changed(new_text, is_evening_push=False):
-    if is_evening_push:
+def has_status_changed(new_text, force_update=False):
+    if force_update:
+        try:
+            with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump({"text": new_text, "update_time": time.time()}, f, ensure_ascii=False)
+        except Exception:
+            pass
         return True
 
     if os.path.exists(CACHE_FILE):
@@ -169,25 +174,27 @@ def push_auto_schedule():
 
     card_content, config, weather_live, traffic_live = generate_dynamic_realtime_card()
     
-    if has_status_changed(card_content, is_evening_push):
-        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 动态拉取实时 API 成功，下发微信推送！")
-        res = send_msg(token, card_content)
-        if res.get("errcode") != 0:
-            tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
-            tmpl_payload = {
-                "touser": USER_OPENID,
-                "template_id": TEMPLATE_ID,
-                "data": {
-                    "first": {"value": f"🌸 明日路书 · {config['route_title']} (实时校对)", "color": "#1890ff"},
-                    "keyword1": {"value": f"{config['name']}: {weather_live}", "color": "#cf1322"},
-                    "keyword2": {"value": f"{traffic_live.splitlines()[0]}", "color": "#333333"},
-                    "remark": {"value": f"{config['wish']}", "color": "#fa8c16"}
-                }
-            }
-            try:
-                requests.post(tmpl_url, json=tmpl_payload, timeout=10)
-            except Exception as e:
-                print("模板发送异常:", e)
+    # 逻辑核心：白天只推【变动预警】，晚间 20:00 推【全量明日路书】
+    if is_evening_push:
+        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间 20:00 预告窗口，下发全量明日路书！")
+        send_msg(token, card_content)
+        has_status_changed(card_content, force_update=True)
+    else:
+        if has_status_changed(card_content):
+            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 检测到路况/天气突发变动！下发差异变动预警！")
+            diff_text = f"""🚨 突发变动预警 · {config['route_title']}
+⏱️ 实测变动时间：{beijing_dt.strftime('%Y-%m-%d %H:%M')}
+
+【 🌤️ 最新气象变动 】
+• {config['name']}：{weather_live}
+
+【 🚦 最新路况/管制变动 】
+• {traffic_live}
+
+💖 安全第一，请谨慎驾驶"""
+            send_msg(token, diff_text)
+        else:
+            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 白天云端巡查：无突发变动，静默防打扰。")
 
 if __name__ == "__main__":
     push_auto_schedule()
