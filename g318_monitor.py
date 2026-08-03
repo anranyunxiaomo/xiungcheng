@@ -12,10 +12,10 @@ TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID") or "oaJwSb8IrjhC6pNlMas4jSOo2
 
 CACHE_FILE = "last_pushed_status.json"
 
-# 川西路线主要节点经纬度坐标
+# 川西路线主要节点经纬度坐标与全量数据
 CITY_COORDINATES = {
     "08-01": {"name": "康定市", "lat": 30.0489, "lon": 101.9614, "route_title": "成都市 ➔ 康定市", "elevation": "2560m (温柔适应高原)", "food": "尚品牛味汤锅 (溜溜城店) / 菌王府野生菌 / 康定凉粉", "toilet": "首推雅安天全服务区 (星级干净，安心使用)", "wish": "💖 祝你第一天行程浪漫愉快"},
-    "08-02": {"name": "雅江县", "lat": 30.0324, "lon": 101.0153, "route_title": "康定市 ➔ 雅江县", "elevation": "折多山 4298m ➔ 雅江 2600m", "food": "雅江松茸炖土鸡 / 雅江特色松茸面 / 张艳烧烤", "toilet": "折多山垭口室内洗手间 (收费2元) / 新都桥酒店", "wish": "💖 愿你明天看到最浪漫的雪山日落"},
+    "08-02": {"name": "雅江县", "lat": 30.0324, "lon": 101.0153, "route_title": "康定市 ➔ 雅江县", "elevation": "折多山 4298m ➔ 雅江 2600m", "food": "雅江松茸炖土鸡 / 雅江特色松茸面 / 张艳烧烤", "toilet": "折多山垭口室内洗手间 (收费2元) / 新都桥酒店", "wish": "💖 愿你今天看到最浪漫的雪山日落"},
     "08-03": {"name": "巴塘县", "lat": 30.0743, "lon": 99.1060, "route_title": "雅江县 ➔ 理塘县 ➔ 巴塘县", "elevation": "理塘 4014m ➔ 巴塘 2560m", "food": "理塘仓央云阁 (千户藏寨) / 巴塘团结包子 / 希朵私房菜", "toilet": "理塘毛垭大草原游客中心卫生间 / 姊妹湖观景台", "wish": "💖 漫步大草原，愿你享受属于你的旅程"},
     "08-04": {"name": "格聂南线", "lat": 29.8000, "lon": 99.6000, "route_title": "格聂南线越野腹地", "elevation": "扎瓦拉 5022m ➔ 则巴村 3900m", "food": "则巴村民宿藏家手抓牦牛肉 / 藏式暖心土火锅", "toilet": "腹地无公共洗手间，在巴塘出发前及民宿解决", "wish": "💖 深入格聂秘境，愿你拥抱最纯粹的雪山草原 (🚨极寒保暖预警)"},
     "08-05": {"name": "新都桥", "lat": 30.0300, "lon": 101.5300, "route_title": "则巴村 ➔ 新都桥镇", "elevation": "老冷古寺 3900m ➔ 新都桥 3300m", "food": "塞外人家 (新都桥店) 鲜美野生菌汤锅 / 阿弥藏餐", "toilet": "理塘县城正规加油站及新都桥酒店卫生间", "wish": "💖 探访老冷古寺，愿你感受秘境的宁静"},
@@ -70,9 +70,9 @@ def fetch_realtime_live_weather(lat, lon):
         r = requests.get(url, timeout=5).json()
         daily = r.get("daily", {})
         
-        temp_max = round(daily.get("temperature_2m_max", [20, 21])[1])
-        temp_min = round(daily.get("temperature_2m_min", [12, 14])[1])
-        precip_prob = daily.get("precipitation_probability_max", [0, 55])[1]
+        temp_max = round(daily.get("temperature_2m_max", [20, 21])[0])
+        temp_min = round(daily.get("temperature_2m_min", [12, 14])[0])
+        precip_prob = daily.get("precipitation_probability_max", [0, 55])[0]
         
         weather_desc = "晴间多云"
         if precip_prob > 60:
@@ -87,26 +87,24 @@ def fetch_realtime_live_weather(lat, lon):
 
 def fetch_realtime_traffic_status(date_key):
     if date_key == "08-01":
-        return "原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区\n• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管制\n• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定\n• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟\n• 精准加油：雅安天全服务区 / 康定折东路城关站"
+        return "原计划：成都 ➔ G4218 雅康高速直达 ➔ 康定市区\n• 变动原因：因近期强降雨防汛避险，雅康高速泸康段管控\n• 最新走法：雅康高速 ➔ 泸定站分流下高速 ➔ G318老路(49km) ➔ 康定\n• 通行说明：G318 瓦斯沟老路柏油路畅通，仅多耗时 20分钟\n• 精准加油：雅安天全服务区 / 康定折东路城关站"
     elif date_key == "08-07":
         return "原计划：经 S569 省道甲根坝段前往冷嘎措\n• 管制原因：S569线 K16-K54 段施工 (08:00-12:00 / 14:00-19:00 全封闭)\n• 破局方案：卡准 12:00-14:00 放行窗口，或走 G248 沙德绕行\n• 精准加油：中石油新都桥站 (冷嘎措山脚无正规站)"
     else:
         return "途经干线全线双向畅通｜注意山体坡脚防落石，请安全行驶"
 
-def generate_dynamic_realtime_card():
+def generate_card_data(target_date, card_type="tomorrow"):
     beijing_dt = fetch_beijing_time()
     timestamp = beijing_dt.strftime("%Y-%m-%d %H:%M")
     
-    tomorrow_dt = beijing_dt + timedelta(days=1)
-    tomorrow_str = tomorrow_dt.strftime("%m-%d")
-
-    target_date = tomorrow_str if tomorrow_str in CITY_COORDINATES else "08-04"
-    config = CITY_COORDINATES[target_date]
+    config = CITY_COORDINATES.get(target_date, CITY_COORDINATES["08-03"])
 
     realtime_weather_info = fetch_realtime_live_weather(config["lat"], config["lon"])
     realtime_traffic_info = fetch_realtime_traffic_status(target_date)
 
-    card_text = f"""🌸 明日路书 · {config['route_title']}
+    header_title = "明日路书" if card_type == "tomorrow" else "今日路书实况"
+
+    card_text = f"""🌸 {header_title} · {config['route_title']}
 📍 地标海拔：{config['elevation']}
 ⏱️ 第一手动态 API 校对：{timestamp}
 
@@ -166,35 +164,42 @@ def has_status_changed(new_text, force_update=False):
 def push_auto_schedule():
     token = get_access_token()
     if not token:
-        print("无法获取微信 token，原因：AppID或Secret为空或配置无效")
+        print("无法获取微信 token")
         return
 
     beijing_dt = fetch_beijing_time()
+    today_str = beijing_dt.strftime("%m-%d")
+    tomorrow_str = (beijing_dt + timedelta(days=1)).strftime("%m-%d")
+    
+    # 严格判断当前时段
     is_evening_push = (beijing_dt.hour == 20 and beijing_dt.minute <= 30)
 
-    card_content, config, weather_live, traffic_live = generate_dynamic_realtime_card()
-    
-    # 逻辑核心：白天只推【变动预警】，晚间 20:00 推【全量明日路书】
     if is_evening_push:
-        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间 20:00 预告窗口，下发全量明日路书！")
+        # 1. 晚间 20:00 阶段：推送【第二天】的全量明日路书
+        card_content, config, weather_live, traffic_live = generate_card_data(tomorrow_str, card_type="tomorrow")
+        print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间 20:00 预告窗口，下发第二天({tomorrow_str})的全量明日路书！")
         send_msg(token, card_content)
         has_status_changed(card_content, force_update=True)
     else:
+        # 2. 白天巡查阶段：关注【当天】的实时路况与天气变化
+        card_content, config, weather_live, traffic_live = generate_card_data(today_str, card_type="today")
         if has_status_changed(card_content):
-            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 检测到路况/天气突发变动！下发差异变动预警！")
-            diff_text = f"""🚨 突发变动预警 · {config['route_title']}
+            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 检测到当天({today_str})路况/天气突发变动！下发当天实时预警！")
+            diff_text = f"""🚨 当天突发变动预警 · {config['route_title']}
 ⏱️ 实测变动时间：{beijing_dt.strftime('%Y-%m-%d %H:%M')}
 
-【 🌤️ 最新气象变动 】
+【 🌤️ 当天最新气象变动 】
 • {config['name']}：{weather_live}
 
-【 🚦 最新路况/管制变动 】
+【 🚦 当天最新路况/管制变动 】
 • {traffic_live}
 
 💖 安全第一，请谨慎驾驶"""
             send_msg(token, diff_text)
+            if False: # 降级模板逻辑同理
+                pass
         else:
-            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 白天云端巡查：无突发变动，静默防打扰。")
+            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 白天巡查：当天({today_str})路况与天气无突发变动，静默防打扰。")
 
 if __name__ == "__main__":
     push_auto_schedule()
