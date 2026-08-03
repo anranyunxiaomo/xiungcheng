@@ -134,13 +134,19 @@ def generate_card_data(target_date, card_type="tomorrow"):
 
 {config['wish']}"""
 
-    return card_text, config, realtime_weather_info, realtime_traffic_info
+    # 生成剔除了时间戳的【纯核心数据签名】
+    core_sig = f"{config['route_title']}_{realtime_weather_info}_{realtime_traffic_info}"
 
-def has_status_changed(new_text, force_update=False):
+    return card_text, config, realtime_weather_info, realtime_traffic_info, core_sig
+
+def has_status_changed(core_sig, force_update=False):
+    """
+    基于纯核心数据签名的比对引擎，彻底剔除时间戳变动的干扰，确保无突发变化时 100% 零推送
+    """
     if force_update:
         try:
             with open(CACHE_FILE, "w", encoding="utf-8") as f:
-                json.dump({"text": new_text, "update_time": time.time()}, f, ensure_ascii=False)
+                json.dump({"sig": core_sig, "update_time": time.time()}, f, ensure_ascii=False)
         except Exception:
             pass
         return True
@@ -149,14 +155,14 @@ def has_status_changed(new_text, force_update=False):
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 cached_data = json.load(f)
-                if cached_data.get("text") == new_text:
+                if cached_data.get("sig") == core_sig:
                     return False
         except Exception:
             pass
 
     try:
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump({"text": new_text, "update_time": time.time()}, f, ensure_ascii=False)
+            json.dump({"sig": core_sig, "update_time": time.time()}, f, ensure_ascii=False)
     except Exception:
         pass
     return True
@@ -171,20 +177,19 @@ def push_auto_schedule():
     today_str = beijing_dt.strftime("%m-%d")
     tomorrow_str = (beijing_dt + timedelta(days=1)).strftime("%m-%d")
     
-    # 严格判断当前时段
     is_evening_push = (beijing_dt.hour == 20 and beijing_dt.minute <= 30)
 
     if is_evening_push:
-        # 1. 晚间 20:00 阶段：推送【第二天】的全量明日路书
-        card_content, config, weather_live, traffic_live = generate_card_data(tomorrow_str, card_type="tomorrow")
+        # 晚间 20:00 阶段：推送【第二天】的全量明日路书
+        card_content, config, weather_live, traffic_live, core_sig = generate_card_data(tomorrow_str, card_type="tomorrow")
         print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间 20:00 预告窗口，下发第二天({tomorrow_str})的全量明日路书！")
         send_msg(token, card_content)
-        has_status_changed(card_content, force_update=True)
+        has_status_changed(core_sig, force_update=True)
     else:
-        # 2. 白天巡查阶段：关注【当天】的实时路况与天气变化
-        card_content, config, weather_live, traffic_live = generate_card_data(today_str, card_type="today")
-        if has_status_changed(card_content):
-            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 检测到当天({today_str})路况/天气突发变动！下发当天实时预警！")
+        # 白天巡查阶段：只在【当天】路况或天气产生真实核心变动时下发
+        card_content, config, weather_live, traffic_live, core_sig = generate_card_data(today_str, card_type="today")
+        if has_status_changed(core_sig):
+            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 检测到当天({today_str})核心路况/天气发生真实变动！下发突发预警！")
             diff_text = f"""🚨 当天突发变动预警 · {config['route_title']}
 ⏱️ 实测变动时间：{beijing_dt.strftime('%Y-%m-%d %H:%M')}
 
@@ -196,10 +201,8 @@ def push_auto_schedule():
 
 💖 安全第一，请谨慎驾驶"""
             send_msg(token, diff_text)
-            if False: # 降级模板逻辑同理
-                pass
         else:
-            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 白天巡查：当天({today_str})路况与天气无突发变动，静默防打扰。")
+            print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 白天巡查：当天({today_str})核心数据无真实变动，100%静默零推送。")
 
 if __name__ == "__main__":
     push_auto_schedule()
