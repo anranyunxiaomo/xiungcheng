@@ -12,7 +12,7 @@ TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID") or "oaJwSb8IrjhC6pNlMas4jSOo2
 
 CACHE_FILE = "last_pushed_status.json"
 
-# 川西路线 9 天全量专属精准数据配置（每一天绝对独立精准，绝不走通用通用兜底）
+# 川西路线 9 天全量专属精准数据配置
 CITY_COORDINATES = {
     "08-01": {
         "name": "康定市",
@@ -67,7 +67,7 @@ CITY_COORDINATES = {
         "toilet": "腹地无公共洗手间，在巴塘出发前及民宿解决",
         "social": "实时路况：夯达营地雨后炮弹坑有积水，建议慢速通过；格聂之眼执法人员巡查严格，严禁压草滩",
         "fashion": "最厚防风羽绒服 ➕ 贴身保暖内衣 ➕ 针织帽手套 (全线最冷日)\n• 黄金光影：12:00 扎瓦拉垭口雪山全景与夯达营地牧场",
-        "cares": "扎瓦拉垭口海拔 5022 米，气温极低，拍照停留请不要超过 20 分钟防止高反，布洛芬放在易拿处。\n• 特别注意：2026 年环保执法非常严格，严禁将车辆驶离路基开入草滩，违者会被重罚。\n• 越野腹地部分区域没有手机信号，已提前准备好离线地图与保温水杯。",
+        "cares": "扎瓦拉垭口海拔 5022 米，气温极低，拍照停留请不要超过 20 分钟防止高反，布洛芬放在易拿处。\n• 特别注意：2026 年环保执法非常严格，严禁将车辆驶离路基开入草滩，违者会被重罚。\n• 越野腹地部分区域没有信号，已提前准备好离线地图与保温水杯。",
         "wish": "💖 深入格聂秘境，愿你拥抱最纯粹的雪山草原 (🚨极寒保暖预警)"
     },
     "08-05": {
@@ -91,7 +91,7 @@ CITY_COORDINATES = {
         "route_title": "理塘县 ➔ 新都桥镇",
         "elevation": "理塘 4014m ➔ 新都桥 3300m",
         "traffic": "原计划：G318 轻松赶路休整日\n• 通行说明：G318 国道全线畅通，坡脚防零星散落碎石\n• 精准加油：新都桥镇中心加油站补充燃油",
-        "food": "阿西土陶牦牛汤锅：风景绝佳的高观景汤锅\n• 云雪里甄选火锅：鲜切牦牛肉与浓郁野生菌汤",
+        "food": "阿西土陶牦牛汤锅：慢性好风光汤锅\n• 云雪里甄选火锅：鲜切牦牛肉与浓郁野生菌汤",
         "toilet": "新都桥镇沿线正规餐厅与酒店卫生间",
         "social": "实时路况：新都桥十里长廊傍晚 18:00 天色光影极佳，无施工堵车点，游人车辆通行井然有序",
         "fashion": "复古文艺裙装/休闲外套 ➕ 墨镜\n• 黄金光影：17:30-18:30 新都桥十里长廊夕阳藏寨",
@@ -171,7 +171,7 @@ def send_msg(token, content):
     for attempt in range(3):
         try:
             res = requests.post(custom_url, data=json_data, headers=headers, timeout=10).json()
-            print("微信推送结果:", res)
+            print("微信客服接口推送结果:", res)
             return res
         except Exception as e:
             print(f"发送消息第 {attempt+1} 次重试:", e)
@@ -206,7 +206,7 @@ def generate_card_data(target_date, card_type="tomorrow"):
     beijing_dt = fetch_beijing_time()
     timestamp = beijing_dt.strftime("%Y-%m-%d %H:%M")
     
-    config = CITY_COORDINATES.get(target_date, CITY_COORDINATES["08-04"])
+    config = CITY_COORDINATES.get(target_date, CITY_COORDINATES["08-05"])
 
     realtime_weather_info = fetch_realtime_live_weather(config["lat"], config["lon"])
 
@@ -283,7 +283,24 @@ def push_auto_schedule():
     if is_evening_push:
         card_content, config, weather_live, traffic_live, core_sig = generate_card_data(tomorrow_str, card_type="tomorrow")
         print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 北京时间 20:00 预告窗口，下发第二天({tomorrow_str})的全量精准明日路书！")
-        send_msg(token, card_content)
+        res = send_msg(token, card_content)
+        if res.get("errcode") != 0:
+            print(f"客服接口由于配额限制 (errcode: {res.get('errcode')}) 自动无缝切换为精细模板通道下发！")
+            tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
+            tmpl_payload = {
+                "touser": USER_OPENID,
+                "template_id": TEMPLATE_ID,
+                "data": {
+                    "first": {"value": f"🌸 明日路书 · {config['route_title']} (海拔{config['elevation']})", "color": "#1890ff"},
+                    "keyword1": {"value": f"{config['name']}: {weather_live}", "color": "#cf1322"},
+                    "keyword2": {"value": f"{config['traffic'].splitlines()[0]} | {config['food'].splitlines()[0]}", "color": "#333333"},
+                    "remark": {"value": f"{config['wish']}", "color": "#fa8c16"}
+                }
+            }
+            try:
+                requests.post(tmpl_url, json=tmpl_payload, timeout=10)
+            except Exception as e:
+                print("模板发送异常:", e)
         has_status_changed(core_sig, force_update=True)
     else:
         card_content, config, weather_live, traffic_live, core_sig = generate_card_data(today_str, card_type="today")
@@ -299,7 +316,23 @@ def push_auto_schedule():
 • {traffic_live}
 
 💖 安全第一，请谨慎驾驶"""
-            send_msg(token, diff_text)
+            res = send_msg(token, diff_text)
+            if res.get("errcode") != 0:
+                tmpl_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={token}"
+                tmpl_payload = {
+                    "touser": USER_OPENID,
+                    "template_id": TEMPLATE_ID,
+                    "data": {
+                        "first": {"value": f"🚨 当天突发变动预警 · {config['route_title']}", "color": "#1890ff"},
+                        "keyword1": {"value": f"{config['name']}: {weather_live}", "color": "#cf1322"},
+                        "keyword2": {"value": f"{traffic_live.splitlines()[0]}", "color": "#333333"},
+                        "remark": {"value": "💖 安全第一，请谨慎驾驶！", "color": "#fa8c16"}
+                    }
+                }
+                try:
+                    requests.post(tmpl_url, json=tmpl_payload, timeout=10)
+                except Exception as e:
+                    print("模板发送异常:", e)
         else:
             print(f"[{beijing_dt.strftime('%Y-%m-%d %H:%M')}] 白天巡查：当天({today_str})核心数据无真实变动，100%静默零推送。")
 
