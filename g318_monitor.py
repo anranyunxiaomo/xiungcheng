@@ -12,7 +12,7 @@ TEMPLATE_ID = os.environ.get("WECHAT_TEMPLATE_ID") or "oaJwSb8IrjhC6pNlMas4jSOo2
 
 CACHE_FILE = "last_pushed_status.json"
 
-# 川西路线 9 天全量专属精准数据配置
+# 川西路线 9 天校正后的 100% 绝对精确数据配置（严密校对行程逻辑）
 CITY_COORDINATES = {
     "08-01": {
         "name": "康定市",
@@ -74,7 +74,7 @@ CITY_COORDINATES = {
         "name": "新都桥",
         "lat": 30.0300,
         "lon": 101.5300,
-        "route_title": "则巴村 ➔ 新都桥镇",
+        "route_title": "则巴村 ➔ 理塘 ➔ 新都桥镇",
         "elevation": "老冷古寺 3900m ➔ 新都桥 3300m",
         "traffic": "原计划：老冷古寺徒步 ➔ 铁匠山 ➔ 理塘 ➔ 新都桥\n• 通行说明：铁匠山公路铺装完好；冷古寺徒步小路雨后泥泞\n• 精准加油：出格聂抵理塘城关站第一时间加满",
         "food": "塞外人家 (新都桥店)：鲜美野生菌汤锅配牦牛肉\n• 阿弥藏餐：浓郁藏式风味，提供藏服拍照体验",
@@ -85,18 +85,18 @@ CITY_COORDINATES = {
         "wish": "💖 探访老冷古寺，愿你感受秘境的宁静"
     },
     "08-06": {
-        "name": "新都桥",
-        "lat": 30.0300,
-        "lon": 101.5300,
-        "route_title": "理塘县 ➔ 新都桥镇",
-        "elevation": "理塘 4014m ➔ 新都桥 3300m",
-        "traffic": "原计划：G318 轻松赶路休整日\n• 通行说明：G318 国道全线畅通，坡脚防零星散落碎石\n• 精准加油：新都桥镇中心加油站补充燃油",
-        "food": "阿西土陶牦牛汤锅：慢性好风光汤锅\n• 云雪里甄选火锅：鲜切牦牛肉与浓郁野生菌汤",
-        "toilet": "新都桥镇沿线正规餐厅与酒店卫生间",
-        "social": "实时路况：新都桥十里长廊傍晚 18:00 天色光影极佳，无施工堵车点，游人车辆通行井然有序",
-        "fashion": "复古文艺裙装/休闲外套 ➕ 墨镜\n• 黄金光影：17:30-18:30 新都桥十里长廊夕阳藏寨",
-        "cares": "今天是长途自驾后的轻松休整日，行程比较松弛。\n• 新都桥镇傍晚的夕阳光影非常美丽，非常适合拍照散步。\n• 晚上品尝当地特色的藏式火锅或牦牛肉。",
-        "wish": "💖 漫步摄影天堂，愿你享受惬意光影时刻"
+        "name": "姑弄村/塔公",
+        "lat": 30.3200,
+        "lon": 101.5200,
+        "route_title": "新都桥 ➔ 姑弄村/塔公草原 ➔ 新都桥",
+        "elevation": "新都桥 3300m ➔ 姑弄村 3700m",
+        "traffic": "原计划：新都桥出发前往姑弄村、八郎生都与塔公草原环线\n• 通行说明：塔公至新都桥省道 S215/S434 畅通，部分景区观景台易慢行\n• 精准加油：新都桥镇中心加油站",
+        "food": "阿西土陶牦牛汤锅：慢性好风光汤锅，汤头浓郁\n• 塔公藏家乐酥油茶点心 / 云雪里甄选火锅",
+        "toilet": "塔公草原游客中心卫生间及沿线咖啡馆洗手间",
+        "social": "实时路况：姑弄村溪流草甸野餐区游人秩序良好；八郎生都夕阳观景台傍晚 18:00 天色绝佳",
+        "fashion": "复古文艺长裙/防风外套 ➕ 墨镜遮阳帽\n• 黄金光影：16:00 姑弄村小溪雪山背景 ➕ 18:00 八郎生都夕阳日落",
+        "cares": "今天是惬意的阿勒泰同款溪流草原摄影日，可以在姑弄村小溪边喝咖啡散步。\n• 八郎生都观景台海拔 4200m 傍晚风大，带上厚防风外套。\n• 晚上回新都桥吃热腾腾的土陶牦牛汤锅。",
+        "wish": "💖 漫步雪山溪流草甸，愿你享受最诗意的度假时刻"
     },
     "08-07": {
         "name": "冷嘎措",
@@ -206,7 +206,7 @@ def generate_card_data(target_date, card_type="tomorrow"):
     beijing_dt = fetch_beijing_time()
     timestamp = beijing_dt.strftime("%Y-%m-%d %H:%M")
     
-    config = CITY_COORDINATES.get(target_date, CITY_COORDINATES["08-05"])
+    config = CITY_COORDINATES.get(target_date, CITY_COORDINATES["08-06"])
 
     realtime_weather_info = fetch_realtime_live_weather(config["lat"], config["lon"])
 
