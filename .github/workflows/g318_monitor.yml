@@ -1,28 +1,29 @@
-name: 川西自驾 30分钟云端高精度天气与突发路况微信实时监控
+name: G318川西路况与实时天气监控
 
 on:
-  schedule:
-    # 国际标准时间每 30 分钟自动巡查检索一次 (Cron: */30 * * * *)
-    - cron: '*/30 * * * *'
+  # 项目已根据用户指令暂停定时任务
+  # schedule:
+  #   - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
-  traffic_monitor:
+  monitor_g318:
     runs-on: ubuntu-latest
     steps:
       - name: 检出仓库代码
         uses: actions/checkout@v3
 
-      - name: 配置 Python 环境
+      - name: 配置Python环境
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.9'
 
       - name: 安装 Python 依赖
         run: |
+          python -m pip install --upgrade pip
           pip install requests
 
-      - name: 执行 30分钟云端高精度巡查与突发路况实时推送
+      - name: 执行30分钟云端巡查与突发路况实时主动推送
         env:
           WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
           WECHAT_APP_SECRET: ${{ secrets.WECHAT_APP_SECRET }}
